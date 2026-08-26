@@ -1,0 +1,20 @@
+<!doctype html><meta charset=utf-8>
+<body style="margin:0;background:#150634">
+<pixel-city style="display:none"></pixel-city>
+<svg id="s" width="1200" height="420" viewBox="0 0 200 70" style="display:block"></svg>
+<script src="js/city.js"></script>
+<script>
+addEventListener('load',()=>{
+  const i=document.querySelector('pixel-city'), s=document.getElementById('s');
+  const add=(n,x,y,e)=>{s.appendChild(n);n.setAttribute('transform','translate('+x+','+y+')'+(e||''));};
+  add(i.carSprite('#ff2a6d',1),30,40);
+  add(i.carSprite('#05d9e8',-1),80,40);
+  add(i.carSprite('#f8b800',1),128,40);
+  const p1=i.pedSprite('#05d9e8'), p2=i.pedSprite('#ff6ac1'), p3=i.pedSprite('#f8b800');
+  add(p1.g,158,42); add(p2.g,168,42,' scale(-1,1)'); add(p3.g,178,42);
+  p1.lL.setAttribute('transform','translate(1.6,0)');
+  p1.lR.setAttribute('transform','translate(-1.6,0)');
+  p3.lL.setAttribute('transform','translate(-1.2,0)');
+  p3.lR.setAttribute('transform','translate(1.2,0)');
+});
+</script>

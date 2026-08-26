@@ -99,3 +99,15 @@ Canvas scenes run their own animation loops on `requestAnimationFrame`.
 ## Pixel scenes
 
 Every console scene draws on a `#07011a` background with `#170b38` grid lines and uses only the core palette. Blocks are drawn with a light top-left edge (`rgba(255,255,255,.28)`) and a dark bottom-right edge (`rgba(0,0,0,.4)`) to give them depth.
+
+## Aryan City
+
+`<pixel-city>` in `js/city.js` replaces the old project cards. It is a single SVG diorama on a 22x22 isometric grid, tile half-width 26, viewBox `0 0 1144 762`, drawn full-bleed across the page.
+
+Projection is `x = ox + (q - r) * 26`, `y = oy + (q + r) * 13`. Every solid is a three-face box shaded off one base colour: left face at 0.42 brightness, right at 0.66, top at 0.92. Lit landmarks use 0.55 / 0.90 / 1.25 plus a 1px stroke in the base colour.
+
+Depth is painter's order on the diagonal `q + r`. The scene holds one `<g>` band per diagonal, and moving objects (cars, pedestrians, the ship) are moved into the band matching their current position every frame, so they pass behind and in front of buildings correctly.
+
+Districts are chosen by `q + r` (the diagonal) and `q - r` (the side): downtown in the middle north, glass towers east, old town west, the river at diagonals 20 to 22, park south-west, residential south, harbour south-east.
+
+Landmark colours follow the core palette: projects pink and cyan, internships gold and magenta, education gold, homelab cyan, the person on the bench green. Hovering a landmark lifts it above a `#07011a` dim at 0.62 opacity and opens the detail card.
