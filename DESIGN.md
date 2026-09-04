@@ -102,12 +102,100 @@ Every console scene draws on a `#07011a` background with `#170b38` grid lines an
 
 ## Aryan City
 
-`<pixel-city>` in `js/city.js` replaces the old project cards. It is a single SVG diorama on a 22x22 isometric grid, tile half-width 26, viewBox `0 0 1144 762`, drawn full-bleed across the page.
+`<voxel-city>` is a real 3D model of a city, orbitable and zoomable, standing in
+for the old project cards. Three files, split so the content survives a change
+of renderer:
 
-Projection is `x = ox + (q - r) * 26`, `y = oy + (q + r) * 13`. Every solid is a three-face box shaded off one base colour: left face at 0.42 brightness, right at 0.66, top at 0.92. Lit landmarks use 0.55 / 0.90 / 1.25 plus a 1px stroke in the base colour.
+| File | Holds |
+| --- | --- |
+| `js/city-data.js` | The palette, the plate size, the roads, and the eleven landmarks with all their copy. No three.js. |
+| `js/city-voxels.js` | Geometry builders. Takes a landmark, returns merged buffer geometry. No DOM, no scene. |
+| `js/city3d.js` | The custom element: scene, camera, input, labels, panel. |
 
-Depth is painter's order on the diagonal `q + r`. The scene holds one `<g>` band per diagonal, and moving objects (cars, pedestrians, the ship) are moved into the band matching their current position every frame, so they pass behind and in front of buildings correctly.
+three.js r0.180 loads from a CDN through an import map. There is no build step.
 
-Districts are chosen by `q + r` (the diagonal) and `q - r` (the side): downtown in the middle north, glass towers east, old town west, the river at diagonals 20 to 22, park south-west, residential south, harbour south-east.
+**Look.** Chunky grid-snapped boxes under an orthographic camera on the true
+isometric elevation, `normalize(1, 1/sqrt2, 1)`, so the diorama reads the same
+as the flat version it replaces until you orbit it. Boxes are arbitrary sizes
+rather than literal 1x1 voxels, which keeps the model cheap: the whole city is
+40 draw calls and about 24,000 triangles.
 
-Landmark colours follow the core palette: projects pink and cyan, internships gold and magenta, education gold, homelab cyan, the person on the bench green. Hovering a landmark lifts it above a `#07011a` dim at 0.62 opacity and opens the detail card.
+Colour is baked into vertices, not materials, so everything merges. Each
+landmark reduces to at most two meshes, one `MeshLambertMaterial` for solids and
+one unlit `MeshBasicMaterial` for windows, screens and neon, which is what makes
+lit surfaces read as glowing at night. `paint()` also darkens vertices near the
+ground, a cheap stand-in for a shadow map. The skyline is seeded (`mulberry`,
+1337) so it is identical on every load.
+
+**Plate.** A square plate projects to a diamond whose four points are always
+empty, so the ground is laid as strips with the corners chamfered off
+(`CHAMFER` in `city-data.js`). Everything that is not a landmark is scattered at
+import time by `city-data.js` itself: it enumerates the free half-cells of the
+plate once, shuffles them with a fixed-seed LCG, then walks that list placing
+what fits and claiming the space. Enumerate-then-shuffle rather than reject
+sampling, because only about a quarter of the plate is free and uniform
+sampling threw away more than ninety-nine tries in a hundred. That yields
+roughly 25 filler blocks, 100 props and 14 cars, all deterministic.
+
+`tools/layout.mjs` audits the eleven hand-placed landmarks: on the plate, out of
+the water, off the roads, not overlapping, and not completely burying each
+other.
+
+**Depth.** Under this camera screen-x is proportional to `x - z` and distance
+toward the viewer to `x + z`, so a landmark with a larger `x + z` occludes what
+is behind it. This is a layout constraint, not a detail. The bay was originally
+on the far edge of the plate and the entire cargo ship rendered behind the two
+tallest towers; it now sits in the near corner, where nothing can get in front
+of it. `tools/layout.mjs` checks for the same mistake, comparing projected
+screen rectangles rather than raw heights, because a far-back object is lifted
+up the frame by distance alone.
+
+**Water.** The harbour is cut out of the near corner (`WATER` in
+`city-data.js`), and the ground loop splits each strip into a land half and a
+sea half. The rock skirt under the land has to stop *below* grade rather than at
+it, or it quietly buries the whole bay.
+
+**Motion.** A landmark can return named animated parts and `city3d.js` binds
+them without knowing what they are: `spin` (the crane jib, the ferris wheel),
+`screen` (the billboard flicker), `beacons` (pulsing spheres), and `float`,
+which bobs and rolls the cargo ship on the swell. A `float` part is built around
+its own origin and dropped into a group that is then moved, the same trick as
+`spin`.
+
+**Stage.** The diorama projects about 1.31 times as wide as it is tall, so the
+stage is sized from that ratio rather than from the viewport. On a wide screen
+the width is tied to the height (`min(100%, 118vh, 1180px)`), because a stage
+wider than the subject only adds margin and shrinks the city. Below 900px the
+opposite applies and the height is tied to the width (`min(104vw, 76vh, 620px)`)
+so a portrait stage does not leave the city floating in the top half.
+
+**Framing.** Nothing is hand-tuned. `_frameScene()` measures every mesh in the
+camera's own axes and derives the frustum from that, so the city fits whatever
+the stage is. Clicking a landmark flies the camera to it over 780ms, keeping
+whatever angle you had orbited to, and on a wide screen aims off-centre so the
+subject lands clear of the info panel. A landmark may override both the label
+anchor and the fly-in target with `pin` and `pinR`: the person on the bench sits
+in one corner of an 18x18 lawn, so framing the park's bounding box put the one
+thing worth flying to at about fifteen pixels.
+
+**Discovery.** Every landmark carries an HTML label projected over the canvas
+each frame. They are real buttons, so on a phone you can see and tap what is
+there without hovering anything, which the flat version required.
+
+Eleven fixed tags collide the moment the stage narrows, so `_placeLabels()` runs
+a small 2D relaxation each frame: each tag is pulled toward the column above its
+landmark and pushed off any tag it overlaps, separating on the axis of least
+movement with a bias toward vertical. The connector is an SVG leader line drawn
+from the tag's bottom edge to the anchor, not a strut under the tag, because the
+relaxation moves a tag sideways as well as up. Below 620px each landmark swaps
+to its `short` label, and below 900px the muted tags hide entirely once you have
+flown in, since ten of them pile over the subject you just asked to look at.
+
+**Touch.** The canvas starts inert behind a "tap to explore" veil so the page
+still scrolls past it. Tapping the veil enables the controls and sets
+`touch-action: none`; a "done" button hands the gestures back. Labels stay
+tappable either way.
+
+**Bailouts.** No WebGL renders the same eleven landmarks as a plain list.
+`prefers-reduced-motion` stops the idle animation and makes the fly-in instant.
+The render loop only runs while the section is on screen and the tab is visible.

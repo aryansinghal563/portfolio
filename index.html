@@ -107,9 +107,9 @@
       <section class="city">
         <div class="city-head">
           <div class="section-title cyan">ARYAN CITY</div>
-          <span class="city-hint">hover a landmark &#8212; every block is something I built or care about</span>
+          <span class="city-hint">drag to orbit, pinch or scroll to zoom, tap a marker to fly in</span>
         </div>
-        <pixel-city></pixel-city>
+        <voxel-city><p class="vc-boot">Loading the city&#8230;</p></voxel-city>
       </section>
 
       <section class="wave">
@@ -134,8 +134,16 @@
   <script src="js/scenes.js"></script>
   <script src="js/tetris.js"></script>
   <script src="js/github-wave.js"></script>
-  <script src="js/city.js"></script>
   <script src="js/main.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="js/city3d.js"></script>
 </body>
 
 </html>

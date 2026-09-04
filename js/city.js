@@ -99,8 +99,9 @@
     },
   ];
 
-  const DOME = [2, 12],
-    BILL = [9, 9],
+  const CAMPUS = [];
+  for (let cq = 0; cq <= 3; cq++) for (let cr = 11; cr <= 13; cr++) CAMPUS.push([cq, cr]);
+  const BILL = [9, 9],
     BENCH = [11, 17],
     MAST = [12, 18],
     WHEEL = [5, 18],
@@ -769,7 +770,10 @@
       const spMap = new Map();
       PROJECTS.concat(INTERNS).forEach((p) => spMap.set(p.q + "," + p.r, p));
       const reserved = new Set(
-        [DOME, BILL, BENCH, MAST, WHEEL, HCRANE].map((c) => c.join(",")).concat([...CONS_SET]),
+        [BILL, BENCH, MAST, WHEEL, HCRANE]
+          .concat(CAMPUS)
+          .map((c) => c.join(","))
+          .concat([...CONS_SET]),
       );
 
       for (let r = 0; r < NR; r++)
@@ -968,7 +972,7 @@
           else this.add(sum, (g) => this.shop(g, q, r, this.pick([P.cyan, P.gold])));
         }
 
-      this.addDome();
+      this.addCampus();
       this.addBillboard();
       this.addConstruction();
       this.addBench();
@@ -983,25 +987,186 @@
       }
     }
 
-    addDome() {
-      const q = DOME[0],
-        r = DOME[1];
-      this.add(S(q, r), (g) => {
-        const p = ctr(q, r),
-          cx = p[0],
-          cy = p[1],
-          w = TW * 0.92,
-          h = 18;
-        this.box(g, cx, cy, w, h, "#2a1458", 0);
-        [-w * 0.62, w * 0.5].forEach((o) =>
-          el("rect", { x: cx + o, y: cy - h + 1, width: 3, height: h - 2, fill: sh(P.gold, 0.5) }, g),
+    addCampus() {
+      const BRICK = "#9c4a37",
+        TRIM = "#cfc3ad",
+        STONE = "#c6a878",
+        ROOF = "#6f4a35";
+
+      const pav = (g, q0, r0, q1, r1, col, op) => {
+        const a = ctr(q0, r0),
+          b = ctr(q1, r0),
+          c2 = ctr(q1, r1),
+          d = ctr(q0, r1);
+        poly(
+          a[0].toFixed(2) + "," + a[1].toFixed(2) + " " + b[0].toFixed(2) + "," + b[1].toFixed(2) + " " +
+            c2[0].toFixed(2) + "," + c2[1].toFixed(2) + " " + d[0].toFixed(2) + "," + d[1].toFixed(2),
+          col,
+          g,
+          op ? { opacity: op } : null,
         );
+      };
+
+      // Ground plate goes in an early band so neighbouring buildings draw over it
+      // instead of being painted across by the campus group.
+      this.add(11, (g) => {
+        pav(g, 0.05, 10.6, 3.45, 13.44, "#3b2a63");
+        pav(g, 0.9, 11.4, 3.44, 12.6, "#584176");
+        pav(g, 1.15, 11.83, 3.34, 12.17, sh(P.cyan, 0.4), 0.7);
+        pav(g, 1.2, 11.9, 3.3, 12.1, sh(P.cyan, 0.6), 0.5);
+      });
+
+      // isometric block over a rectangular footprint in grid units
+      const block = (g, q0, r0, q1, r1, h, c) => {
+        const A = ctr(q0, r0),
+          B = ctr(q1, r0),
+          C = ctr(q1, r1),
+          D = ctr(q0, r1);
+        const up = (p) => p[0].toFixed(2) + "," + (p[1] - h).toFixed(2);
+        const at = (p) => p[0].toFixed(2) + "," + p[1].toFixed(2);
+        poly(at(D) + " " + at(C) + " " + up(C) + " " + up(D), sh(c, 0.46), g);
+        poly(at(C) + " " + at(B) + " " + up(B) + " " + up(C), sh(c, 0.7), g);
+        poly(up(A) + " " + up(B) + " " + up(C) + " " + up(D), sh(c, 0.95), g);
+        return { A: A, B: B, C: C, D: D, h: h };
+      };
+
+      // point on a wall: u along the base edge, v up the height
+      const fp = (p0, p1, u, v, h) =>
+        (p0[0] + (p1[0] - p0[0]) * u).toFixed(2) + "," + (p0[1] + (p1[1] - p0[1]) * u - v * h).toFixed(2);
+      const panel = (g, p0, p1, h, u0, u1, v0, v1, col, op) =>
+        poly(
+          fp(p0, p1, u0, v0, h) + " " + fp(p0, p1, u1, v0, h) + " " + fp(p0, p1, u1, v1, h) + " " + fp(p0, p1, u0, v1, h),
+          col,
+          g,
+          op ? { opacity: op } : null,
+        );
+
+      const facade = (g, bk, cols) => {
+        const walls = [
+          [bk.D, bk.C, 0.46],
+          [bk.C, bk.B, 0.7],
+        ];
+        for (const w of walls) {
+          const p0 = w[0],
+            p1 = w[1],
+            f = w[2] + 0.35;
+          panel(g, p0, p1, bk.h, 0, 1, 0, 0.06, sh(TRIM, f * 0.75));
+          for (let fl = 0; fl < 4; fl++) {
+            const v0 = 0.07 + fl * 0.225;
+            panel(g, p0, p1, bk.h, 0, 1, v0 + 0.17, v0 + 0.2, sh(TRIM, f * 0.95));
+            for (let i = 0; i < cols; i++) {
+              const lit = this.rnd() < 0.5;
+              panel(
+                g,
+                p0,
+                p1,
+                bk.h,
+                (i + 0.26) / cols,
+                (i + 0.76) / cols,
+                v0 + 0.03,
+                v0 + 0.155,
+                lit ? sh(P.gold, f * 1.25) : sh("#2b3f6b", f * 1.15),
+                lit ? 0.95 : 0.85,
+              );
+            }
+          }
+        }
+      };
+
+      const wing = (g, w) => {
+        const bk = block(g, w[0], w[1], w[2], w[3], 30, BRICK);
+        facade(g, bk, 4);
+        const A = [bk.A[0], bk.A[1] - 30],
+          B = [bk.B[0], bk.B[1] - 30],
+          C = [bk.C[0], bk.C[1] - 30],
+          D = [bk.D[0], bk.D[1] - 30];
+        const q4 = (a, b, c2, d, col) =>
+          poly(
+            a[0].toFixed(2) + "," + a[1].toFixed(2) + " " + b[0].toFixed(2) + "," + b[1].toFixed(2) + " " +
+              c2[0].toFixed(2) + "," + c2[1].toFixed(2) + " " + d[0].toFixed(2) + "," + d[1].toFixed(2),
+            col,
+            g,
+          );
+        const lift = (p) => [p[0], p[1] - 3];
+        q4(D, C, lift(C), lift(D), sh(TRIM, 0.58));
+        q4(C, B, lift(B), lift(C), sh(TRIM, 0.76));
+        q4(lift(A), lift(B), lift(C), lift(D), sh(TRIM, 1.0));
+        const mid = [(A[0] + C[0]) / 2, (A[1] + C[1]) / 2 - 3];
+        el("rect", { x: mid[0] - 5, y: mid[1] - 10, width: 10, height: 10, fill: sh(BRICK, 0.75) }, g);
+        el("rect", { x: mid[0] - 5, y: mid[1] - 10, width: 10, height: 2, fill: sh(TRIM, 1.05) }, g);
+      };
+
+      // cylinder shading ramp, reused by the drum wall and its glazing
+      const gid = this.uid + "-drum";
+      const grad = el("linearGradient", { id: gid, x1: "0%", y1: "0%", x2: "100%", y2: "0%" }, this.defs);
+      [
+        [0, 0.3],
+        [0.16, 0.46],
+        [0.44, 0.92],
+        [0.62, 0.78],
+        [0.85, 0.48],
+        [1, 0.34],
+      ].forEach((s) => el("stop", { offset: s[0] * 100 + "%", "stop-color": sh(STONE, s[1]) }, grad));
+
+      this.add(17, (g) => {
+        // ---- library: round drum closing the far end of the courtyard ----
+        const L = ctr(0.62, 12.0);
+        const rx = 20,
+          ry = rx * 0.5,
+          PL = 6,
+          H = 45,
+          DY = L[1] - PL;
+        el("ellipse", { cx: L[0], cy: L[1] + 3, rx: rx * 1.26, ry: ry * 1.26, fill: "#2f1c56" }, g);
+        // plinth
+        el("ellipse", { cx: L[0], cy: L[1], rx: rx * 1.1, ry: ry * 1.1, fill: sh(STONE, 0.3) }, g);
+        el("rect", { x: L[0] - rx * 1.1, y: DY, width: rx * 2.2, height: PL, fill: sh(STONE, 0.3) }, g);
+        el("ellipse", { cx: L[0], cy: DY, rx: rx * 1.1, ry: ry * 1.1, fill: sh(STONE, 0.44) }, g);
+        // drum: curved bottom edge then the wall, both on the same shading ramp
+        el("ellipse", { cx: L[0], cy: DY, rx: rx, ry: ry, fill: "url(#" + gid + ")" }, g);
+        el("rect", { x: L[0] - rx, y: DY - H, width: rx * 2, height: H, fill: "url(#" + gid + ")" }, g);
+        // ribbon glazing, inset from the silhouette so the wall wraps past it
+        for (let fl = 0; fl < 3; fl++) {
+          const wy = DY - H + 7 + fl * 11.5;
+          el("rect", { x: L[0] - rx * 0.99, y: wy, width: rx * 1.98, height: 6, fill: "#1b2a52" }, g);
+          for (let i = -5; i <= 5; i++) {
+            const u = i / 5.8;
+            if (this.rnd() > 0.45) continue;
+            const wl = Math.max(1.3, 3.1 * Math.sqrt(Math.max(0.03, 1 - u * u)));
+            el(
+              "rect",
+              { x: (L[0] + u * rx - wl / 2).toFixed(2), y: wy + 0.9, width: wl.toFixed(2), height: 4.2, fill: P.gold, opacity: 0.9 },
+              g,
+            );
+          }
+          // same ramp over the glazing so the windows curve away with the wall
+          el("rect", { x: L[0] - rx, y: wy, width: rx * 2, height: 6, fill: "url(#" + gid + ")", opacity: 0.42 }, g);
+          el("rect", { x: L[0] - rx, y: wy + 6, width: rx * 2, height: 1.4, fill: sh(STONE, 0.26), opacity: 0.6 }, g);
+        }
+        // thin overhanging roof slab
+        el("ellipse", { cx: L[0], cy: DY - H, rx: rx * 1.06, ry: ry * 1.06, fill: sh(ROOF, 0.5) }, g);
+        el("rect", { x: L[0] - rx * 1.06, y: DY - H - 2.2, width: rx * 2.12, height: 2.2, fill: sh(ROOF, 0.5) }, g);
+        el("ellipse", { cx: L[0], cy: DY - H - 2.2, rx: rx * 1.06, ry: ry * 1.06, fill: sh(ROOF, 0.86) }, g);
         el(
           "ellipse",
-          { cx: cx, cy: cy - h - w * 0.2, rx: w * 0.6, ry: w * 0.48, fill: sh(P.gold, 0.85), stroke: sh(P.gold, 1.2), "stroke-width": 1.2 },
+          { cx: L[0], cy: DY - H - 2.2, rx: rx * 1.06, ry: ry * 1.06, fill: "none", stroke: sh(ROOF, 1.2), "stroke-width": 1 },
           g,
         );
-        el("rect", { x: cx - 1.5, y: cy - h - w * 0.2 - w * 0.48 - 8, width: 3, height: 8.5, fill: P.gold }, g);
+
+        // ---- wings and courtyard planting, strictly back to front ----
+        wing(g, [1.15, 10.78, 2.22, 11.36]);
+        wing(g, [2.42, 10.78, 3.48, 11.36]);
+        [
+          [1.72, 11.6],
+          [2.92, 11.6],
+          [1.72, 12.42],
+          [2.92, 12.42],
+        ].forEach((t) => {
+          const q = ctr(t[0], t[1]);
+          this.tree(g, q[0], q[1], 0.6);
+        });
+        wing(g, [1.15, 12.64, 2.22, 13.22]);
+        wing(g, [2.42, 12.64, 3.48, 13.22]);
+
         this.hook(g, {
           c: P.gold,
           kick: "EDUCATION",
@@ -1011,6 +1176,7 @@
         });
       });
     }
+
 
     addBillboard() {
       const q = BILL[0],
