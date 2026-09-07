@@ -118,19 +118,22 @@ a {
 
 .hero {
   display: grid;
-  grid-template-columns: 1fr 480px;
+  grid-template-columns: 1fr 540px;
   gap: 40px;
-  padding: 50px 0 0;
+  padding: 72px 0 8px;
   align-items: center;
+  position: relative;
 }
 .hero-text {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  position: relative;
+  z-index: 1;
 }
 .name {
   margin: 0;
-  font-size: clamp(64px, 8.5vw, 110px);
+  font-size: clamp(54px, 6.4vw, 86px);
   line-height: 0.9;
   font-weight: 700;
   color: #d1f7ff;
@@ -219,11 +222,23 @@ a {
 
 .console {
   justify-self: center;
-  width: 452px;
+  width: 520px;
+  max-width: 100%;
   background: linear-gradient(160deg, #1a0b3a, #12063a);
   border-radius: 16px 16px 72px 16px;
   padding: 24px 24px 30px;
   box-shadow: 0 10px 0 #07011a;
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 861px) {
+  .console {
+    margin-left: -56px;
+  }
+  .console.has-3d aryan-boy-3d {
+    transform: rotate(-5deg);
+    transform-origin: 50% 40%;
+  }
 }
 .console-screen {
   background: #07011a;
@@ -278,6 +293,18 @@ a {
 }
 .screen-stage canvas {
   animation: cartIn 0.28s ease;
+  transition: filter 0.25s ease;
+}
+/* SELECT backlight: dim the picture, like the worm light going out */
+.console[data-light="dim"] .screen-stage canvas {
+  filter: brightness(0.55);
+}
+.console[data-light="dim"] .screen-title {
+  opacity: 0.5;
+}
+/* power fx canvases (boot, shutdown, standby) animate themselves */
+.screen-stage canvas.fx-canvas {
+  animation: none;
 }
 
 .console-label {
@@ -349,6 +376,9 @@ a {
   line-height: 1;
   padding: 0;
 }
+.dpad button:active {
+  filter: brightness(1.6);
+}
 .ab {
   display: flex;
   gap: 16px;
@@ -405,6 +435,23 @@ a {
   font-size: 6px;
   color: #7a6fb0;
   transform: translateX(2px);
+}
+button.ss-item {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+button.ss-item:active .ss-pill {
+  transform: scaleX(0.85);
+  background: #05d9e8;
+}
+.console[data-power="off"] .dots span {
+  opacity: 0.3;
+}
+.console[data-power="off"] .dot-r {
+  background: #3a1440;
 }
 
 .grid-fx {
@@ -862,7 +909,7 @@ voxel-city.vc-hovering .vc-canvas {
   .console {
     justify-self: stretch;
     width: 100%;
-    max-width: 452px;
+    max-width: 520px;
     margin: 0 auto;
   }
   .name {
@@ -921,4 +968,51 @@ voxel-city.vc-hovering .vc-canvas {
   font-family: "VT323", monospace;
   font-size: 18px;
   color: #5a4f90;
+}
+
+/* Realistic 3D ARYAN BOY. The CSS console stays as the no-WebGL fallback;
+   once the 3D element boots it tags .console with .has-3d and the flat UI
+   becomes the hidden texture source for the 3D screen. */
+aryan-boy-3d {
+  display: none;
+}
+.console {
+  position: relative;
+}
+.console.has-3d {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.console.has-3d aryan-boy-3d {
+  display: block;
+  height: 700px;
+  cursor: grab;
+}
+.console.has-3d aryan-boy-3d:active {
+  cursor: grabbing;
+}
+.console.has-3d .console-screen {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.console.has-3d .console-label,
+.console.has-3d .swap-hint,
+.console.has-3d .controls,
+.console.has-3d .startsel {
+  display: none;
+}
+@media (max-width: 860px) {
+  .console.has-3d aryan-boy-3d {
+    height: 640px;
+  }
+}
+@media (max-width: 480px) {
+  .console.has-3d aryan-boy-3d {
+    height: 600px;
+  }
 }

@@ -343,9 +343,13 @@ sow(14, () => 1.3, 0.2, prop("crate"));
 sow(12, () => 0.8, 0.2, prop("hydrant"));
 
 // Cars sit on the tarmac, so they are placed along the lanes rather than
-// scattered. Two lanes each way on both main streets.
-export const CARS = [];
-for (let t = -EXTENT + 5; t < EXTENT - 4; t += 4) {
-  if (rnd() < 0.5) CARS.push(["x", t, rnd() < 0.5 ? -2.1 : 2.1, rnd()]);
-  if (Math.abs(t) > 6 && rnd() < 0.5) CARS.push(["z", rnd() < 0.5 ? -2.1 : 2.1, t, rnd()]);
-}
+// scattered. Two lanes each way on both main streets. Kept sparse on purpose:
+// a handful of moving cars reads as traffic, a dozen reads as a traffic jam.
+// Spots start clear of the intersection so nobody spawns blocking it.
+export const CARS = [
+  ["x", -22, 2.1, rnd()],
+  ["x", -10, -2.1, rnd()],
+  ["x", 12, 2.1, rnd()],
+  ["z", -2.1, -16, rnd()],
+  ["z", 2.1, 10, rnd()],
+];

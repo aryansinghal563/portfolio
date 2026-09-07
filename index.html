@@ -48,7 +48,8 @@
           </div>
         </div>
 
-        <div class="console">
+        <div class="console" data-power="off">
+          <aryan-boy-3d aria-hidden="true"></aryan-boy-3d>
           <div class="console-screen">
             <div class="screen-bar">
               <span class="dot-r"></span><span class="dot-y"></span><span class="dot-c"></span>
@@ -77,8 +78,8 @@
             </div>
           </div>
           <div class="startsel">
-            <div class="ss-item"><span class="ss-pill"></span><span class="ss-label">SELECT</span></div>
-            <div class="ss-item"><span class="ss-pill"></span><span class="ss-label">START</span></div>
+            <button class="ss-item" data-light="select" title="backlight"><span class="ss-pill"></span><span class="ss-label">SELECT</span></button>
+            <button class="ss-item" data-power="start" title="power"><span class="ss-pill"></span><span class="ss-label">START</span></button>
           </div>
         </div>
       </section>
@@ -144,6 +145,7 @@
     }
   </script>
   <script type="module" src="js/city3d.js"></script>
+  <script type="module" src="js/boy3d.js"></script>
 </body>
 
 </html>

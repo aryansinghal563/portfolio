@@ -5,7 +5,7 @@
 
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { P, EXTENT, CHAMFER, WATER, ROADS, FILLER, PROPS, CARS } from "./city-data.js";
+import { P, EXTENT, CHAMFER, WATER, ROADS, FILLER, PROPS } from "./city-data.js";
 
 // Multiply a hex colour's channels, the same trick the old SVG city used to
 // get light and dark faces off one base colour.
@@ -157,20 +157,42 @@ function hydrant(v, x, y, z, s) {
 
 const PROP_FN = { tree, pine, bush, rock, lamp, crate, hydrant };
 
-// A car, drawn along the x or the z axis. Headlights and tail lights glow.
-function car(v, axis, x, z, r) {
-  const cols = [P.pink, P.cyan, P.gold, P.mag, P.trim];
-  const c = cols[Math.floor(r * 5) % 5];
-  const L = 2.9;
-  const W = 1.4;
-  const [w, d] = axis === "x" ? [L, W] : [W, L];
-  v.box(x, 0.34, z, w, 0.75, d, sh(c, 0.66));
-  v.box(x, 1.09, z, w * 0.55, 0.65, d * 0.8, sh(P.dark, 2.2));
-  // lights on the leading and trailing faces
-  const nx = axis === "x" ? L / 2 : 0;
-  const nz = axis === "x" ? 0 : L / 2;
-  v.box(x + nx, 0.5, z + nz, axis === "x" ? 0.12 : 0.9, 0.3, axis === "x" ? 0.9 : 0.12, P.gold, true);
-  v.box(x - nx, 0.5, z - nz, axis === "x" ? 0.12 : 0.9, 0.3, axis === "x" ? 0.9 : 0.12, P.pink, true);
+// A chunky voxel car built around its own origin, nose toward +x. The body
+// sits high on four block wheels, with a glass cabin, bumpers and a pair of
+// head and tail lights so it reads from the isometric distance. Some cars
+// get a roof sign. Returns merged { solid, glow } ready to drop into a mesh.
+export function buildCar(r) {
+  const v = new Vox();
+  const cols = [P.pink, P.cyan, P.gold, P.mag, P.trim, P.purple, P.green];
+  const c = cols[Math.floor(r * cols.length) % cols.length];
+  const body = sh(c, 0.68);
+  const darkSide = sh(c, 0.45);
+  const glass = sh(P.dark, 2.4);
+  // wheels
+  for (const sx of [-1.05, 1.05])
+    for (const sz of [-0.85, 0.85]) {
+      v.box(sx, 0, sz, 0.62, 0.62, 0.34, sh(P.dark, 2.8));
+      v.box(sx, 0.14, sz + (sz > 0 ? 0.18 : -0.18), 0.3, 0.3, 0.06, sh(P.trim, 0.7));
+    }
+  // chassis and main body
+  v.box(0, 0.45, 0, 3.2, 0.55, 1.6, darkSide);
+  v.box(0, 0.95, 0, 3.1, 0.5, 1.55, body);
+  v.box(1.45, 0.95, 0, 0.4, 0.42, 1.45, sh(body, 1.1));
+  // cabin glass with a body coloured roof
+  v.box(-0.2, 1.45, 0, 1.7, 0.55, 1.35, glass);
+  v.box(-0.2, 1.45, 0, 0.2, 0.55, 1.37, sh(P.dark, 1.4));
+  v.box(-0.2, 2.0, 0, 1.5, 0.16, 1.25, sh(c, 0.9));
+  // bumpers
+  v.box(1.66, 0.55, 0, 0.18, 0.3, 1.6, sh(P.trim, 0.7));
+  v.box(-1.66, 0.55, 0, 0.18, 0.3, 1.6, sh(P.trim, 0.6));
+  // headlights and taillights, a pair each so they read as a car at night
+  for (const sz of [-0.5, 0.5]) {
+    v.box(1.62, 0.95, sz, 0.14, 0.28, 0.38, P.gold, true);
+    v.box(-1.62, 0.95, sz, 0.14, 0.26, 0.38, P.pink, true);
+  }
+  // a few cars get a taxi style roof sign
+  if (r > 0.68) v.box(-0.2, 2.16, 0, 0.7, 0.28, 0.4, P.gold, true);
+  return v.merge();
 }
 
 // A small moored boat sitting on the water surface.
@@ -733,6 +755,5 @@ export function buildGround(rnd) {
     const fn = PROP_FN[p[0]];
     if (fn) fn(v, p[1], 0, p[2], p[3], p[4]);
   }
-  for (const c of CARS) car(v, c[0], c[1], c[2], c[3]);
   return v.merge();
 }

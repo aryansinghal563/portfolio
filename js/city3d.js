@@ -7,8 +7,8 @@
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { LANDMARKS, P } from "./city-data.js";
-import { BUILDERS, buildGround, mulberry } from "./city-voxels.js";
+import { LANDMARKS, P, CARS, EXTENT } from "./city-data.js";
+import { BUILDERS, buildGround, buildCar, mulberry } from "./city-voxels.js";
 
 // True isometric elevation, atan(1 / sqrt 2). Keeps the diorama reading like
 // the flat version it replaces, until you decide to orbit it.
@@ -19,6 +19,24 @@ const FIT = 39;
 // Breathing room around the city, and above it for the floating labels.
 const PAD = 1.04;
 const FLY_MS = 780;
+// Cars run on top of the tarmac. The east arm stops at the waterfront and the
+// south arm dead ends at the park gate, so those are the turnaround points.
+const ROAD_Y = 0.32;
+const X_MIN = -EXTENT + 1;
+const X_MAX = 17;
+const Z_MIN = -EXTENT + 1;
+const Z_MAX = 12;
+// Traffic tuning: bumper to bumper length, when to stop behind the car ahead,
+// when to start easing off, where the stop line sits and how far the crossing
+// itself reaches. Lights run a 13s cycle with an all red clearance each way.
+const CAR_LEN = 3.6;
+const STOP_GAP = 2.4;
+const SLOW_GAP = 9;
+const STOP_LINE = 6.8;
+const INTER_HALF = 4.6;
+const LIGHT_CYCLE = 13;
+const ACCEL = 6;
+const BRAKE = 15;
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -42,6 +60,7 @@ class VoxelCity extends HTMLElement {
 
     this._buildCity();
     this._frameScene();
+    this._buildCars();
     this._bindInput();
     this._resize();
     this._home(true);
@@ -278,6 +297,92 @@ class VoxelCity extends HTMLElement {
     }
   }
 
+  // Cars are the only thing in the diorama that moves along the ground. Each
+  // one gets its own group so it can drive its lane, built after _frameScene
+  // so the moving traffic never affects the home framing.
+  _buildCars() {
+    this.cars = [];
+    for (const c of CARS) {
+      const [axis, a, b, r] = c;
+      const built = buildCar(r);
+      const g = new THREE.Group();
+      if (built.solid) g.add(new THREE.Mesh(built.solid, this.solidMat));
+      if (built.glow) g.add(new THREE.Mesh(built.glow, this.glowMat));
+      const lane = axis === "x" ? b : a;
+      const pos = axis === "x" ? a : b;
+      // Right hand traffic: eastbound on the south side, northbound on the
+      // east side, so the nose always points where it is going.
+      const dir = axis === "x" ? (lane > 0 ? 1 : -1) : lane > 0 ? -1 : 1;
+      if (axis === "x") g.rotation.y = dir > 0 ? 0 : Math.PI;
+      else g.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
+      g.position.set(axis === "x" ? pos : lane, ROAD_Y, axis === "x" ? lane : pos);
+      this.scene.add(g);
+      const cruise = 4 + r * 3.5;
+      this.cars.push({ obj: g, axis, lane, pos, dir, cruise, v: cruise });
+    }
+  }
+
+  // One traffic step: alternating green with an all red clearance, plus
+  // car following so a fast car queues behind a slow one instead of driving
+  // through it. Speeds ease toward their target so stops read as braking.
+  _updateCars(dt, now) {
+    const phase = (now / 1000) % LIGHT_CYCLE;
+    const xGo = phase < 5.5;
+    const zGo = phase >= 6.5 && phase < 12;
+    const LX = X_MAX - X_MIN;
+    const LZ = Z_MAX - Z_MIN;
+    let xInside = false;
+    let zInside = false;
+    for (const c of this.cars) {
+      if (Math.abs(c.pos) < INTER_HALF + 1.2) {
+        if (c.axis === "x") xInside = true;
+        else zInside = true;
+      }
+    }
+    for (const c of this.cars) {
+      let want = c.cruise;
+      // Nearest car ahead in the same lane, measured around the wrap.
+      const L = c.axis === "x" ? LX : LZ;
+      let ahead = Infinity;
+      for (const o of this.cars) {
+        if (o === c || o.axis !== c.axis || Math.abs(o.lane - c.lane) > 0.01) continue;
+        const d = c.dir > 0 ? (o.pos - c.pos + L) % L : (c.pos - o.pos + L) % L;
+        if (d > 0.01 && d < ahead) ahead = d;
+      }
+      if (ahead !== Infinity) {
+        const gap = ahead - CAR_LEN;
+        if (gap < STOP_GAP) want = 0;
+        else if (gap < SLOW_GAP) want = Math.min(want, (c.cruise * (gap - STOP_GAP)) / (SLOW_GAP - STOP_GAP));
+      }
+      // Stop line. Once the nose is past it the car is committed and clears
+      // the box even on red, so queues behind it still form at the line.
+      const stop = c.dir > 0 ? -STOP_LINE : STOP_LINE;
+      const dist = (stop - c.pos) * c.dir;
+      const inside = Math.abs(c.pos) < INTER_HALF + 1.2;
+      if (!inside && dist > -1 && dist < 10) {
+        const go = c.axis === "x" ? xGo : zGo;
+        const blocked = c.axis === "x" ? zInside : xInside;
+        if (!go || blocked) {
+          if (dist < 1.4) want = 0;
+          else want = Math.min(want, (c.cruise * (dist - 1.4)) / 6);
+        }
+      }
+      const dv = want - c.v;
+      c.v += Math.max(-BRAKE * dt, Math.min(ACCEL * dt, dv));
+      if (want === 0 && c.v < 0.25) c.v = 0;
+      c.pos += c.dir * c.v * dt;
+      if (c.axis === "x") {
+        if (c.pos > X_MAX) c.pos = X_MIN;
+        else if (c.pos < X_MIN) c.pos = X_MAX;
+        c.obj.position.set(c.pos, ROAD_Y, c.lane);
+      } else {
+        if (c.pos > Z_MAX) c.pos = Z_MIN;
+        else if (c.pos < Z_MIN) c.pos = Z_MAX;
+        c.obj.position.set(c.lane, ROAD_Y, c.pos);
+      }
+    }
+  }
+
   _makeLabel(L, group) {
     const b = document.createElement("button");
     b.type = "button";
@@ -449,8 +554,15 @@ class VoxelCity extends HTMLElement {
   // Where to put the camera so a landmark fills the view. Measures the box
   // along the axes the camera is actually looking down, rather than using a
   // bounding sphere, which over-estimates badly for anything tall and thin.
-  _frameOn(box) {
-    const view = new THREE.Matrix4().copy(this.camera.matrixWorld).invert();
+  // Takes the viewing direction so a fly-in can frame up from the angle it is
+  // about to land on, not the one it is leaving.
+  _frameOn(box, dir) {
+    const center = box.getCenter(new THREE.Vector3());
+    const d = dir || this.camera.position.clone().sub(this.controls.target).normalize();
+    const eye = center.clone().addScaledVector(d, DIST);
+    const look = new THREE.Matrix4().lookAt(eye, center, this.camera.up);
+    look.setPosition(eye);
+    const view = look.invert();
     let x0 = Infinity;
     let x1 = -Infinity;
     let y0 = Infinity;
@@ -480,11 +592,59 @@ class VoxelCity extends HTMLElement {
 
     const target = box.getCenter(new THREE.Vector3());
     if (wide) {
-      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+      const right = new THREE.Vector3().setFromMatrixColumn(view.clone().invert(), 0);
       // Pull the aim point left so the landmark lands right of the panel.
       target.addScaledVector(right, -0.33 * (halfW / zoom));
     }
     return { zoom, target };
+  }
+
+  // Pick a viewing direction that actually sees the landmark. Keeps the
+  // current elevation and tries the smallest swing first: straight on, then
+  // 45deg either way, then 90, then 135, then fully behind. A direction
+  // scores by how many sample points on the landmark read as visible, where
+  // a ray from the camera hits the landmark itself before anything else.
+  _clearDir(box, curDir, group) {
+    const center = box.getCenter(new THREE.Vector3());
+    const samples = [
+      center.clone(),
+      new THREE.Vector3(center.x, box.max.y - 1, center.z),
+      new THREE.Vector3(center.x, (box.min.y + box.max.y) / 2, center.z),
+    ];
+    const sph = new THREE.Spherical().setFromVector3(curDir);
+    const phi = THREE.MathUtils.clamp(sph.phi, 0.6, 1.2);
+    const base = sph.theta;
+    const steps = [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, (3 * Math.PI) / 4, (-3 * Math.PI) / 4, Math.PI];
+    const ray = new THREE.Raycaster();
+    let best = curDir.clone().normalize();
+    let bestScore = -1;
+    for (const step of steps) {
+      const dir = new THREE.Vector3().setFromSphericalCoords(1, phi, base + step).normalize();
+      const eye = center.clone().addScaledVector(dir, DIST);
+      let visible = 0;
+      for (const s of samples) {
+        const toS = s.clone().sub(eye);
+        const dist = toS.length();
+        ray.set(eye, toS.normalize());
+        ray.far = dist;
+        const hits = ray.intersectObjects(this.groups, true);
+        let blocker = null;
+        for (const h of hits) {
+          let o = h.object;
+          while (o && !o.userData.landmark) o = o.parent;
+          if (!o) continue;
+          blocker = o;
+          break;
+        }
+        if (!blocker || blocker === group) visible++;
+      }
+      if (visible > bestScore) {
+        bestScore = visible;
+        best = dir;
+        if (visible === samples.length) break;
+      }
+    }
+    return best;
   }
 
   _home(instant) {
@@ -520,7 +680,7 @@ class VoxelCity extends HTMLElement {
     if (L.url) this.pf.link.href = L.url;
     this.panel.hidden = false;
 
-    const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+    const curDir = this.camera.position.clone().sub(this.controls.target).normalize();
     // Fly to the subject, not to the footprint. Framing the park's whole bounding
     // box put the one thing worth flying to, the person on the bench, at about
     // fifteen pixels. `pinR` frames a cube around the pin instead.
@@ -530,14 +690,19 @@ class VoxelCity extends HTMLElement {
           new THREE.Vector3(L.pinR * 2, L.pinR * 1.6, L.pinR * 2),
         )
       : group.userData.box;
-    const f = this._frameOn(box);
+    // Swing around back lots instead of zooming straight into the tower in
+    // front of them. Smallest clear rotation wins, so front lots keep the
+    // angle you already had.
+    const dir = this._clearDir(box, curDir, group);
+    const f = this._frameOn(box, dir);
     this._flyTo(f.target, f.zoom, false, dir);
   }
 
   _flyTo(target, zoom, instant, dir) {
     const c = this.controls;
-    // Default to the iso shot, but a fly-in keeps whatever angle you orbited to.
-    const d = dir || ISO;
+    // Default to the iso shot. A fly-in to a clear side also swings the orbit
+    // there instead of cutting straight through the towers in between.
+    const d = (dir || ISO).clone().normalize();
     if (instant || reduceMotion()) {
       c.target.copy(target);
       this.camera.position.copy(target).addScaledVector(d, DIST);
@@ -547,12 +712,20 @@ class VoxelCity extends HTMLElement {
       this.fly = null;
       return;
     }
+    const fromD = this.camera.position.clone().sub(c.target).normalize();
+    const fromS = new THREE.Spherical().setFromVector3(fromD);
+    const toS = new THREE.Spherical().setFromVector3(d);
+    let dTheta = toS.theta - fromS.theta;
+    while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+    while (dTheta < -Math.PI) dTheta += Math.PI * 2;
     this.fly = {
       t: 0,
       fromT: c.target.clone(),
-      toT: target,
-      fromP: this.camera.position.clone(),
-      toP: target.clone().addScaledVector(d, DIST),
+      toT: target.clone(),
+      fromPhi: fromS.phi,
+      toPhi: toS.phi,
+      fromTheta: fromS.theta,
+      dTheta,
       fromZ: this.camera.zoom,
       toZ: zoom,
     };
@@ -602,7 +775,10 @@ class VoxelCity extends HTMLElement {
       this.fly.t = Math.min(1, this.fly.t + (dt * 1000) / FLY_MS);
       const k = easeInOut(this.fly.t);
       this.controls.target.lerpVectors(this.fly.fromT, this.fly.toT, k);
-      this.camera.position.lerpVectors(this.fly.fromP, this.fly.toP, k);
+      const phi = this.fly.fromPhi + (this.fly.toPhi - this.fly.fromPhi) * k;
+      const theta = this.fly.fromTheta + this.fly.dTheta * k;
+      const dir = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
+      this.camera.position.copy(this.controls.target).addScaledVector(dir, DIST);
       this.camera.zoom = this.fly.fromZ + (this.fly.toZ - this.fly.fromZ) * k;
       this.camera.updateProjectionMatrix();
       if (this.fly.t >= 1) this.fly = null;
@@ -610,6 +786,7 @@ class VoxelCity extends HTMLElement {
 
     if (!still) {
       for (const s of this.spins) s.obj.rotation[s.axis] += s.speed * dt;
+      if (this.cars) this._updateCars(dt, now);
       for (const f of this.floats) {
         const t = (now / 1000) * f.speed;
         f.obj.position.y = f.y + Math.sin(t) * f.amp;
@@ -655,10 +832,12 @@ class VoxelCity extends HTMLElement {
       l.ax = (l.v.x * 0.5 + 0.5) * rw;
       l.ay = (-l.v.y * 0.5 + 0.5) * rh;
       l.off = l.v.x < -0.99 || l.v.x > 0.99 || l.v.y < -0.99 || l.v.y > 0.995;
+      const dimmed = this.selected && l.group !== this.selected;
+      const hidden = l.off || dimmed;
       l.el.classList.toggle("vc-off", l.off);
-      l.line.style.display = l.off ? "none" : "";
-      l.pip.style.display = l.off ? "none" : "";
-      if (l.off) {
+      l.line.style.display = hidden ? "none" : "";
+      l.pip.style.display = hidden ? "none" : "";
+      if (hidden) {
         l.tx = null;
         continue;
       }
