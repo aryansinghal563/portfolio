@@ -45,6 +45,18 @@ class VoxelCity extends HTMLElement {
   connectedCallback() {
     if (this._up) return;
     this._up = true;
+    // Scrollbar width for the full-bleed .city section. Without this the
+    // 100vw math drifts by half a scrollbar wherever one is showing.
+    this._sbwFn = () => {
+      try {
+        document.documentElement.style.setProperty(
+          "--sbw",
+          window.innerWidth - document.documentElement.clientWidth + "px",
+        );
+      } catch (_) {}
+    };
+    this._sbwFn();
+    window.addEventListener("resize", this._sbwFn);
     this.replaceChildren();
     this._buildDom();
 
@@ -67,15 +79,32 @@ class VoxelCity extends HTMLElement {
 
     this._ro = new ResizeObserver(() => this._resize());
     this._ro.observe(this.stage);
-    // Only burn frames while the city is actually on screen.
+    // Only burn frames while the city is actually on screen. Yield to the
+    // handheld when it clearly owns the viewport instead. Ties run both.
+    this._peerRatio = 0;
+    this._selfRatio = 0;
     this._io = new IntersectionObserver(
       (e) => {
         this._onScreen = e[0].isIntersecting;
+        this._selfRatio = e[0].intersectionRatio || 0;
         this._sync();
       },
-      { threshold: 0.01 },
+      { threshold: [0, 0.01, 0.35, 0.6] },
     );
     this._io.observe(this);
+    try {
+      const peer = document.querySelector(".console");
+      if (peer && "IntersectionObserver" in window) {
+        this._peerIo = new IntersectionObserver(
+          (e) => {
+            this._peerRatio = e[0].intersectionRatio || 0;
+            this._sync();
+          },
+          { threshold: [0, 0.35, 0.6] },
+        );
+        this._peerIo.observe(peer);
+      }
+    } catch (_) {}
     this._onVis = () => this._sync();
     document.addEventListener("visibilitychange", this._onVis);
   }
@@ -85,6 +114,8 @@ class VoxelCity extends HTMLElement {
     this._sync();
     this._ro && this._ro.disconnect();
     this._io && this._io.disconnect();
+    this._peerIo && this._peerIo.disconnect();
+    this._sbwFn && window.removeEventListener("resize", this._sbwFn);
     document.removeEventListener("visibilitychange", this._onVis);
     this.controls && this.controls.dispose();
     if (this.renderer) {
@@ -123,6 +154,10 @@ class VoxelCity extends HTMLElement {
 
     this.veil = h("div", "vc-veil", this.stage);
     h("span", "vc-veil-text", this.veil, "TAP TO EXPLORE THE CITY");
+
+    // Scrollable name chips under the stage. On narrow screens the floating
+    // tags hide and these carry the discovery instead.
+    this.chipHost = h("div", "vc-chips", this);
 
     this.panel = h("div", "vc-panel");
     this.panel.hidden = true;
@@ -230,6 +265,7 @@ class VoxelCity extends HTMLElement {
 
     this.groups = [];
     this.labels = [];
+    this.chips = [];
     this.spins = [];
     this.floats = [];
     this.beacons = [];
@@ -294,6 +330,7 @@ class VoxelCity extends HTMLElement {
       this.scene.add(g);
       this.groups.push(g);
       this.labels.push(this._makeLabel(L, g));
+      this.chips.push(this._makeChip(L, g));
     }
   }
 
@@ -408,6 +445,17 @@ class VoxelCity extends HTMLElement {
     this.leadHost.append(line, pip);
 
     return { el: b, tag, line, pip, group, v: new THREE.Vector3(), w: 60, h: 20, ax: 0, ay: 0, tx: null, ty: 0, off: false };
+  }
+
+  _makeChip(L, group) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "vc-chip";
+    b.style.setProperty("--cc", L.color);
+    b.textContent = L.short || L.label;
+    b.addEventListener("click", () => this._select(group));
+    this.chipHost.appendChild(b);
+    return { el: b, group };
   }
 
   // Tag text and box size only change when the stage does, so measure here
@@ -653,6 +701,7 @@ class VoxelCity extends HTMLElement {
     this.classList.remove("vc-focused");
     for (const g of this.groups) for (const m of g.userData.mats) m.color.setScalar(1);
     for (const l of this.labels) l.el.classList.remove("vc-muted", "vc-on");
+    for (const c of this.chips) c.el.classList.remove("vc-on");
     this._flyTo(this.homeTarget.clone(), 1, instant);
   }
 
@@ -670,6 +719,7 @@ class VoxelCity extends HTMLElement {
       l.el.classList.toggle("vc-on", l.group === group);
       l.el.classList.toggle("vc-muted", l.group !== group);
     }
+    for (const c of this.chips) c.el.classList.toggle("vc-on", c.group === group);
 
     this.panel.style.setProperty("--cc", L.color);
     this.pf.kick.textContent = L.kick;
@@ -734,6 +784,20 @@ class VoxelCity extends HTMLElement {
   // --------------------------------------------------------------- render
 
   _resize() {
+    // On narrow stages size the height from the measured city bounds plus
+    // headroom, instead of a viewport guess that leaves dead space.
+    if (this._w < 900 || this._w === undefined) {
+      if (this.fitW > 0 && this.fitH > 0 && this.stage) {
+        const want = Math.round(this.stage.clientWidth * (this.fitH / this.fitW) + 84);
+        const max = Math.round(window.innerHeight * 0.76);
+        const clamped = Math.max(320, Math.min(want, max));
+        if (Math.abs(this.stage.clientHeight - clamped) > 2) {
+          this.stage.style.height = clamped + "px";
+        }
+      }
+    } else if (this.stage && this.stage.style.height) {
+      this.stage.style.removeProperty("height");
+    }
     const w = this.stage.clientWidth;
     const h = this.stage.clientHeight;
     if (!w || !h) return;
@@ -755,7 +819,9 @@ class VoxelCity extends HTMLElement {
   }
 
   _sync() {
-    const on = !!this._onScreen && !document.hidden;
+    const defer =
+      (this._peerRatio || 0) > 0.35 && (this._selfRatio || 0) < (this._peerRatio || 0);
+    const on = !!this._onScreen && !document.hidden && !defer;
     if (on && !this._raf) {
       this._last = performance.now();
       this._raf = requestAnimationFrame(this._tick);
@@ -807,6 +873,12 @@ class VoxelCity extends HTMLElement {
     this.controls.update();
     this._placeLabels();
     this.renderer.render(this.scene, this.camera);
+    // First painted frame fades the stage in so the city never pops
+    // into view mid scroll.
+    if (!this._live) {
+      this._live = true;
+      this.classList.add("vc-live");
+    }
   };
 
   // Project every anchor, then shove the tags out of each other's way.
@@ -882,6 +954,8 @@ class VoxelCity extends HTMLElement {
         l.ty = Math.min(Math.max(l.ty, l.h + 3), rh - 3);
       }
     }
+
+    if (live.length && this.labelHost) this.labelHost.classList.add("vc-placed");
 
     for (const l of live) {
       l.el.style.transform =

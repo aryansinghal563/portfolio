@@ -328,6 +328,12 @@
     } else if (e.key === "ArrowRight") {
       go(cart + 1);
     } else if (e.key === "Enter") {
+      // Only when the handheld is actually on screen, so reading the
+      // page elsewhere never powers the console off by accident.
+      if (!consoleEl) return;
+      var r = consoleEl.getBoundingClientRect();
+      var inView = r.bottom > 0 && r.top < window.innerHeight;
+      if (!inView) return;
       e.preventDefault();
       togglePower();
     }

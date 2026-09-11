@@ -107,8 +107,9 @@ export const LANDMARKS = [
     short: "CHURN",
     kick: "ML PROJECT",
     title: "Telco Churn Predictor",
-    body: "Classic ML on tabular customer data. Tenure, charges and contract terms in, churn risk out.",
-    stack: "Python · scikit-learn · Pandas",
+    body: "End to end on 7,043 customers. Logistic Regression at 0.89 recall beats tuned RF plus XGBoost, KMeans sorts risk into action groups.",
+    stack: "Python · scikit-learn · XGBoost · KMeans",
+    url: "https://github.com/aryansinghal563/Telco-customer-churn-prediction-and-segmentation",
   },
   {
     id: "wip",

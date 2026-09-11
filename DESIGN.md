@@ -22,11 +22,11 @@ The design language for the site. Retro arcade / Gameboy, vaporwave palette, pix
 
 | Token | Hex | Where it is used |
 |-------|-----|------------------|
-| Lavender | `#9d8fd8` | Nav links, tagline, card body |
-| Dim lavender | `#7a6fb0` | Blurb, captions, small labels |
+| Lavender | `#9d8fd8` | Nav links, tagline |
+| Dim lavender | `#8b7fca` | Blurb, captions, small labels |
 | Panel | `#12063a` | Project cards, cassette body |
 | Border | `#2a1458` | Card borders, control pads, dividers |
-| Hint | `#5a4f90` | Scene status label text |
+| Hint | `#7e74bd` | Scene status label text |
 | Light gold | `#ffd23f` | Page fold highlight, moon glow |
 | Ground dark | `#2a1458` | Anime scene ground |
 | Ground light | `#3a1d6e` | Anime scene ground top edge |
@@ -47,22 +47,20 @@ Fallback for every font is `monospace`.
 
 | Element | Size |
 |---------|------|
-| Name (hero) | `clamp(64px, 8.5vw, 110px)` |
-| Card title | `24px` |
+| Name (hero) | `clamp(54px, 6.4vw, 86px)` |
 | Tagline | `20px` |
-| Blurb | `16px` |
 | Tags | `16px` |
 | Nav links | `15px` |
-| Card body | `15px` |
 | Wave caption | `14px` |
-| Card stack | `13px` |
 | Brand (nav) | `12px` |
+| Intent line | `10px` |
+| Wave tabs / city chips | `8px` |
 | Section title (cyan) | `12px` |
 | Console label | `12px` |
 | Buttons (start / github) | `10px` |
 | Section title (pink) | `10px` |
 | Foot brand | `9px` |
-| Screen bar / card kick | `8px` |
+| Screen bar | `8px` |
 | Scene hint label | `8px` |
 | Swap hint / A-B labels | `7px` |
 | Select-start labels | `6px` |

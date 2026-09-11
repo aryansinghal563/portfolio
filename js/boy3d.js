@@ -27,7 +27,10 @@ class AryanBoy3D extends HTMLElement {
     } catch (err) {
       console.warn("aryan-boy-3d: falling back to CSS console", err);
       this.style.display = "none";
-      try { document.documentElement.classList.remove("expect-3d"); } catch (_) {}
+      try {
+        document.documentElement.classList.remove("expect-3d");
+        this._setFlatInert(false);
+      } catch (_) {}
       return;
     }
     document.querySelector(".console")?.classList.add("has-3d");
@@ -36,11 +39,28 @@ class AryanBoy3D extends HTMLElement {
     this._io = new IntersectionObserver(
       (e) => {
         this._onScreen = e[0].isIntersecting;
+        this._selfRatio = e[0].intersectionRatio || 0;
         this._sync();
       },
-      { threshold: 0.02 },
+      { threshold: [0, 0.02, 0.35, 0.6] },
     );
     this._io.observe(this);
+    // Yield to the city when it clearly owns the viewport, so two WebGL
+    // loops never burn frames together on weak hardware. Ties run both.
+    this._cityRatio = 0;
+    try {
+      const peer = document.querySelector("voxel-city");
+      if (peer && "IntersectionObserver" in window) {
+        this._peerIo = new IntersectionObserver(
+          (e) => {
+            this._cityRatio = e[0].intersectionRatio || 0;
+            this._sync();
+          },
+          { threshold: [0, 0.35, 0.6] },
+        );
+        this._peerIo.observe(peer);
+      }
+    } catch (_) {}
     this._onVis = () => this._sync();
     document.addEventListener("visibilitychange", this._onVis);
     this._sync();
@@ -49,8 +69,10 @@ class AryanBoy3D extends HTMLElement {
   disconnectedCallback() {
     this._onScreen = false;
     this._sync();
+    try { this._setFlatInert(false); } catch (_) {}
     this._ro?.disconnect();
     this._io?.disconnect();
+    this._peerIo?.disconnect();
     document.removeEventListener("visibilitychange", this._onVis);
     this._mo?.disconnect();
     this._mo2?.disconnect();
@@ -466,6 +488,19 @@ class AryanBoy3D extends HTMLElement {
     });
   }
 
+  // The flat 2D controls are display:none under 3D, but inert makes
+  // certain keyboard users can never tab into the hidden buttons.
+  _setFlatInert(on) {
+    const con = document.querySelector(".console");
+    if (!con) return;
+    for (const sel of [".controls", ".startsel"]) {
+      const el = con.querySelector(sel);
+      if (!el) continue;
+      if (on) el.setAttribute("inert", "");
+      else el.removeAttribute("inert");
+    }
+  }
+
   _pressPower() {
     document.querySelector('[data-power="start"]')?.click();
     if (this.pillStart && !reduceMotion()) {
@@ -583,7 +618,9 @@ class AryanBoy3D extends HTMLElement {
   }
 
   _sync() {
-    const on = this._onScreen !== false && !document.hidden;
+    const defer =
+      (this._cityRatio || 0) > 0.35 && (this._selfRatio || 0) < (this._cityRatio || 0);
+    const on = this._onScreen !== false && !document.hidden && !defer;
     if (on && !this._raf) {
       this._last = performance.now();
       this._raf = requestAnimationFrame(this._tick);
@@ -658,6 +695,7 @@ class AryanBoy3D extends HTMLElement {
     if (!this._ready) {
       this._ready = true;
       document.querySelector(".console")?.classList.add("is-3d-ready");
+      try { this._setFlatInert(true); } catch (_) {}
       try {
         var de = document.documentElement;
         de.classList.add("is-3d-ready");

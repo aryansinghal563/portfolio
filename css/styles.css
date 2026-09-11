@@ -120,7 +120,7 @@ a {
   display: grid;
   grid-template-columns: 1fr 540px;
   gap: 40px;
-  padding: 72px 0 8px;
+  padding: 72px 0 56px;
   align-items: center;
   position: relative;
 }
@@ -159,6 +159,15 @@ html.fonts-ready .nl {
       forwards,
     fillSweep 0.85s ease calc(1s + var(--i, 0) * 0.05s) 1;
 }
+/* Still readers get the name instantly with no animation. Placed after
+   the fonts-ready rule so it wins at equal strength. */
+@media (prefers-reduced-motion: reduce) {
+  .nl,
+  html.fonts-ready .nl {
+    animation: none;
+    opacity: 1;
+  }
+}
 /* Hold the whole hero copy until the fonts land. Layout is
    reserved with visibility so there is no shift, just no paint. */
 html.fonts-loading .hero-text {
@@ -173,12 +182,20 @@ html.fonts-loading .hero-text {
   font-size: 20px;
   color: #9d8fd8;
 }
-.blurb {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.7;
-  color: #7a6fb0;
-  max-width: 480px;
+.intent {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  line-height: 1.8;
+  letter-spacing: 1px;
+  color: #05d9e8;
+}
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 .cta-row {
@@ -198,6 +215,7 @@ html.fonts-loading .hero-text {
   padding: 0 20px;
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   box-shadow: 5px 5px 0 #05d9e8;
   transition:
     box-shadow 0.12s,
@@ -206,6 +224,11 @@ html.fonts-loading .hero-text {
 .btn-start:hover {
   box-shadow: 2px 2px 0 #05d9e8;
   transform: translate(3px, 3px);
+}
+.btn-start .btn-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
 }
 .btn-gh {
   text-decoration: none;
@@ -334,7 +357,7 @@ html.fonts-loading .hero-text {
 .swap-hint-text {
   font-family: "Press Start 2P", monospace;
   font-size: 7px;
-  color: #7a6fb0;
+  color: #8b7fca;
 }
 .dots {
   display: flex;
@@ -417,7 +440,7 @@ html.fonts-loading .hero-text {
 .ab-label {
   font-family: "Press Start 2P", monospace;
   font-size: 7px;
-  color: #7a6fb0;
+  color: #8b7fca;
   transform: translateX(3px);
 }
 
@@ -442,7 +465,7 @@ html.fonts-loading .hero-text {
 .ss-label {
   font-family: "Press Start 2P", monospace;
   font-size: 6px;
-  color: #7a6fb0;
+  color: #8b7fca;
   transform: translateX(2px);
 }
 button.ss-item {
@@ -461,37 +484,6 @@ button.ss-item:active .ss-pill {
 }
 .console[data-power="off"] .dot-r {
   background: #3a1440;
-}
-
-.grid-fx {
-  height: 120px;
-  margin-top: 36px;
-  overflow: hidden;
-  position: relative;
-}
-.grid-fx-lines {
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  top: 0;
-  bottom: -60px;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 42, 109, 0.5) 0 2px,
-      transparent 2px 60px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(5, 217, 232, 0.4) 0 2px,
-      transparent 2px 34px
-    );
-  transform: perspective(300px) rotateX(55deg);
-}
-.grid-fx-fade {
-  position: absolute;
-  inset: 0;
-  box-shadow: inset 0 40px 30px -20px #0d0221;
 }
 
 .section-title {
@@ -555,7 +547,7 @@ button.ss-item:active .ss-pill {
 .city-hint {
   font-family: "VT323", monospace;
   font-size: 17px;
-  color: #6a5f9e;
+  color: #8478c0;
   letter-spacing: 1px;
 }
 voxel-city {
@@ -581,6 +573,16 @@ voxel-city [hidden] {
   height: min(84vh, 840px);
   min-height: 460px;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+voxel-city.vc-live .vc-stage {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-stage {
+    transition: none;
+  }
 }
 .vc-canvas {
   display: block;
@@ -591,6 +593,13 @@ voxel-city [hidden] {
 voxel-city.vc-hovering .vc-canvas {
   cursor: pointer;
 }
+/* Grab hand inside the frame says draggable before a single click. */
+voxel-city .vc-canvas {
+  cursor: grab;
+}
+voxel-city .vc-canvas:active {
+  cursor: grabbing;
+}
 
 /* Labels are the whole point on touch: you can see what is clickable
    without hovering anything. They are real buttons, so tapping one works
@@ -600,6 +609,10 @@ voxel-city.vc-hovering .vc-canvas {
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  visibility: hidden;
+}
+.vc-labels.vc-placed {
+  visibility: visible;
 }
 .vc-label {
   position: absolute;
@@ -673,6 +686,62 @@ voxel-city.vc-hovering .vc-canvas {
   box-shadow: 0 0 18px var(--cc, #ff2a6d);
 }
 
+/* Name chips under the stage. Hidden on desktop where the floating tags
+   do the job, shown on narrow screens where tags would bury the model. */
+.vc-chips {
+  display: none;
+}
+.vc-chips:empty {
+  display: none;
+}
+@media (max-width: 900px) {
+  /* The veil already says tap to explore down here. */
+  .city-hint {
+    display: none;
+  }
+  /* Pips mode: tags and leader lines hide, dots on the buildings plus
+     the chip rail below carry all discovery. */
+  .vc-label {
+    pointer-events: none;
+  }
+  .vc-label .vc-tag {
+    display: none;
+  }
+  .vc-leads .vc-lead {
+    display: none;
+  }
+  .vc-pip {
+    r: 4.5;
+  }
+  .vc-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 18px 6px;
+    max-width: 1180px;
+    margin: 0 auto;
+    scrollbar-width: thin;
+  }
+  .vc-chip {
+    flex: none;
+    font-family: "Press Start 2P", monospace;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: var(--cc, #ff2a6d);
+    background: rgba(7, 1, 26, 0.9);
+    border: 1px solid var(--cc, #ff2a6d);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+  .vc-chip.vc-on {
+    background: var(--cc, #ff2a6d);
+    color: #07011a;
+    box-shadow: 0 0 18px var(--cc, #ff2a6d);
+  }
+}
 .vc-hud {
   position: absolute;
   right: 14px;
@@ -737,7 +806,7 @@ voxel-city.vc-hovering .vc-canvas {
   right: 8px;
   font-size: 18px;
   line-height: 1;
-  color: #7a6fb0;
+  color: #8b7fca;
   background: none;
   border: 0;
   cursor: pointer;
@@ -847,9 +916,35 @@ voxel-city.vc-hovering .vc-canvas {
   font-size: 10px;
   color: #ff2a6d;
 }
+.wave-tabs {
+  display: flex;
+  gap: 10px;
+}
+.wave-tab {
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #8b7fca;
+  background: transparent;
+  border: 1px solid #2a1458;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.wave-tab:hover {
+  color: #05d9e8;
+  border-color: #05d9e8;
+}
+.wave-tab.on {
+  color: #0d0221;
+  background: #05d9e8;
+  border-color: #05d9e8;
+}
 .wave-caption {
   font-size: 14px;
-  color: #7a6fb0;
+  color: #8b7fca;
 }
 .wave github-wave {
   max-width: 100%;
@@ -875,7 +970,9 @@ voxel-city.vc-hovering .vc-canvas {
 }
 .foot-links {
   display: flex;
-  gap: 26px;
+  flex-wrap: wrap;
+  row-gap: 12px;
+  column-gap: 26px;
   font-size: 14px;
 }
 .foot-links a {
@@ -896,7 +993,7 @@ voxel-city.vc-hovering .vc-canvas {
 }
 .foot-copy {
   font-size: 13px;
-  color: #7a6fb0;
+  color: #8b7fca;
 }
 
 .screen-stage,
@@ -918,10 +1015,20 @@ voxel-city.vc-hovering .vc-canvas {
   max-width: 100%;
 }
 
+@media (min-width: 861px) and (max-width: 1100px) {
+  /* The console ate two thirds of the row here. Cap its column. */
+  .hero {
+    grid-template-columns: 1fr 460px;
+  }
+}
 @media (max-width: 860px) {
   .hero {
     grid-template-columns: 1fr;
     gap: 48px;
+  }
+  /* The handheld is the showpiece: it goes first on mobile. */
+  .hero .console {
+    order: -1;
   }
   .console {
     justify-self: stretch;
@@ -935,6 +1042,9 @@ voxel-city.vc-hovering .vc-canvas {
 }
 
 @media (max-width: 560px) {
+  .nav-links a {
+    padding: 8px 4px;
+  }
   .nav {
     flex-wrap: wrap;
     gap: 14px 20px;
@@ -974,9 +1084,6 @@ voxel-city.vc-hovering .vc-canvas {
   .cta-row {
     flex-wrap: wrap;
   }
-  .grid-fx {
-    height: 90px;
-  }
 }
 .vc-boot {
   margin: 0;
@@ -984,7 +1091,7 @@ voxel-city.vc-hovering .vc-canvas {
   text-align: center;
   font-family: "VT323", monospace;
   font-size: 18px;
-  color: #5a4f90;
+  color: #7e74bd;
 }
 
 /* Realistic 3D ARYAN BOY. The CSS console stays as the no-WebGL fallback;
@@ -1103,7 +1210,7 @@ html.expect-3d:not(.is-3d-ready) .console::after {
 }
 @media (max-width: 480px) {
   html.expect-3d:not(.is-3d-ready) .console {
-    min-height: 600px;
+    min-height: 480px;
   }
 }
 .console.has-3d aryan-boy-3d:active {
@@ -1130,6 +1237,6 @@ html.expect-3d:not(.is-3d-ready) .console::after {
 }
 @media (max-width: 480px) {
   .console.has-3d aryan-boy-3d {
-    height: 600px;
+    height: 480px;
   }
 }
