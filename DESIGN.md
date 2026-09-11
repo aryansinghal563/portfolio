@@ -108,7 +108,7 @@ of renderer:
 
 | File | Holds |
 | --- | --- |
-| `js/city-data.js` | The palette, the plate size, the roads, and the eleven landmarks with all their copy. No three.js. |
+| `js/city-data.js` | The palette, the plate size, the roads, and the twelve landmarks with all their copy. No three.js. |
 | `js/city-voxels.js` | Geometry builders. Takes a landmark, returns merged buffer geometry. No DOM, no scene. |
 | `js/city3d.js` | The custom element: scene, camera, input, labels, panel. |
 
@@ -137,7 +137,7 @@ sampling, because only about a quarter of the plate is free and uniform
 sampling threw away more than ninety-nine tries in a hundred. That yields
 roughly 25 filler blocks, 100 props and 14 cars, all deterministic.
 
-`tools/layout.mjs` audits the eleven hand-placed landmarks: on the plate, out of
+`tools/layout.mjs` audits the twelve hand-placed landmarks: on the plate, out of
 the water, off the roads, not overlapping, and not completely burying each
 other.
 
@@ -182,7 +182,7 @@ thing worth flying to at about fifteen pixels.
 each frame. They are real buttons, so on a phone you can see and tap what is
 there without hovering anything, which the flat version required.
 
-Eleven fixed tags collide the moment the stage narrows, so `_placeLabels()` runs
+Twelve fixed tags collide the moment the stage narrows, so `_placeLabels()` runs
 a small 2D relaxation each frame: each tag is pulled toward the column above its
 landmark and pushed off any tag it overlaps, separating on the axis of least
 movement with a bias toward vertical. The connector is an SVG leader line drawn
@@ -196,6 +196,6 @@ still scrolls past it. Tapping the veil enables the controls and sets
 `touch-action: none`; a "done" button hands the gestures back. Labels stay
 tappable either way.
 
-**Bailouts.** No WebGL renders the same eleven landmarks as a plain list.
+**Bailouts.** No WebGL renders the same twelve landmarks as a plain list.
 `prefers-reduced-motion` stops the idle animation and makes the fly-in instant.
 The render loop only runs while the section is on screen and the tab is visible.

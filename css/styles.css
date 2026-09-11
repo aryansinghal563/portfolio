@@ -150,10 +150,19 @@ a {
     -webkit-text-fill-color 0.1s linear,
     -webkit-text-stroke-color 0.12s;
   opacity: 0;
+}
+/* Hero animation only runs once the pixel fonts are ready,
+   so first paint never shows the fallback font. */
+html.fonts-ready .nl {
   animation:
     snapIn 0.42s cubic-bezier(0.2, 1.55, 0.35, 1) calc(var(--i, 0) * 0.06s)
       forwards,
     fillSweep 0.85s ease calc(1s + var(--i, 0) * 0.05s) 1;
+}
+/* Hold the whole hero copy until the fonts land. Layout is
+   reserved with visibility so there is no shift, just no paint. */
+html.fonts-loading .hero-text {
+  visibility: hidden;
 }
 .nl:hover {
   -webkit-text-fill-color: #ff2a6d;
@@ -870,12 +879,20 @@ voxel-city.vc-hovering .vc-canvas {
   font-size: 14px;
 }
 .foot-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: #d1f7ff;
   text-decoration: none;
   transition: color 0.15s;
 }
 .foot-links a:hover {
   color: #05d9e8;
+}
+.foot-links .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 .foot-copy {
   font-size: 13px;
@@ -988,6 +1005,106 @@ aryan-boy-3d {
   display: block;
   height: 700px;
   cursor: grab;
+  opacity: 0;
+}
+/* Entrance pop on the element. The actual 360 spin happens on the
+   real model inside boy3d.js, so the back you see mid turn is real
+   geometry with real lighting, never a mirrored flat canvas. */
+@keyframes boyPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Fill backwards so the pop controls the element mid flight, then hands
+   back to static styles. That keeps the desktop minus 5 degree lean. */
+.console.has-3d.is-3d-ready aryan-boy-3d {
+  opacity: 1;
+  animation: boyPopIn 0.9s cubic-bezier(0.25, 0.9, 0.3, 1) backwards;
+}
+/* Desktop leans the whole entrance too, so the tilted spin lands
+   straight into the static lean with no snap. */
+@media (min-width: 861px) {
+  @keyframes boyPopInTilted {
+    0% {
+      opacity: 0;
+      transform: scale(0.55) rotate(-5deg);
+    }
+    55% {
+      opacity: 1;
+      transform: scale(1.05) rotate(-5deg);
+    }
+    75% {
+      opacity: 1;
+      transform: scale(0.98) rotate(-5deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(-5deg);
+    }
+  }
+  .console.has-3d.is-3d-ready aryan-boy-3d {
+    animation-name: boyPopInTilted;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .console.has-3d.is-3d-ready aryan-boy-3d {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+/* While 3D is expected but not ready, never show the 2D console.
+   The flat UI still runs hidden as the texture source for the 3D
+   screen. 2D only appears if expect-3d is removed (3D failed). */
+html.expect-3d:not(.is-3d-ready) .console {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  min-height: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.expect-3d:not(.is-3d-ready) .console .console-screen,
+html.expect-3d:not(.is-3d-ready) .console .console-label,
+html.expect-3d:not(.is-3d-ready) .console .swap-hint,
+html.expect-3d:not(.is-3d-ready) .console .controls,
+html.expect-3d:not(.is-3d-ready) .console .startsel,
+html.expect-3d:not(.is-3d-ready) .console aryan-boy-3d {
+  visibility: hidden;
+}
+html.expect-3d:not(.is-3d-ready) .console::after {
+  content: "LOADING";
+  position: absolute;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #05d9e8;
+  animation: blink 1s steps(2) infinite;
+  pointer-events: none;
+}
+@media (max-width: 860px) {
+  html.expect-3d:not(.is-3d-ready) .console {
+    min-height: 640px;
+  }
+}
+@media (max-width: 480px) {
+  html.expect-3d:not(.is-3d-ready) .console {
+    min-height: 600px;
+  }
 }
 .console.has-3d aryan-boy-3d:active {
   cursor: grabbing;

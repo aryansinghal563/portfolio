@@ -6,7 +6,7 @@
 // back into js/city-data.js. It does not any more: the scatter moved into
 // city-data.js itself, where it enumerates the free cells of the plate once,
 // shuffles them with a fixed seed and walks them. So all that is left to do
-// here is check the hand-placed part, the eleven landmarks, which is the part
+// here is check the hand-placed part, the twelve landmarks, which is the part
 // a human still edits and therefore the part that still breaks.
 //
 // Checks, in order of how often each one has actually caught something:

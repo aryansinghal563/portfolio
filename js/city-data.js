@@ -62,18 +62,18 @@ export const ROADS = [
   [-4, -EXTENT, 4, 12],
 ];
 
-// The eleven things worth clicking. `kind` picks the builder in city-voxels.js,
+// The twelve things worth clicking. `kind` picks the builder in city-voxels.js,
 // `at` is the footprint centre, `size` is [width, depth] in cells. `short` is
 // the label used once the stage is too narrow for the full name.
 export const LANDMARKS = [
   {
     id: "judge",
-    kind: "tower",
-    at: [-12, -12],
-    size: [9, 9],
-    height: 30,
+    kind: "house",
+    at: [-18, 8],
+    size: [8, 7],
+    height: 9,
     color: P.pink,
-    label: "JUDGE.EXE",
+    label: "JUDGE.DEB",
     short: "JUDGE",
     kick: "PROJECT",
     title: "Code Judge Engine",
@@ -83,12 +83,12 @@ export const LANDMARKS = [
   },
   {
     id: "dock",
-    kind: "tower",
-    at: [-24, -10],
-    size: [8, 8],
-    height: 22,
+    kind: "house",
+    at: [-8, 8],
+    size: [7, 7],
+    height: 9,
     color: P.cyan,
-    label: "DOCK.EXE",
+    label: "DOCK.APK",
     short: "DOCK",
     kick: "PROJECT",
     title: "Vivaldi Media Dock",
@@ -97,11 +97,25 @@ export const LANDMARKS = [
     url: "https://github.com/aryansinghal563/vivaldi-media-player",
   },
   {
+    id: "churn",
+    kind: "house",
+    at: [-12, 20],
+    size: [7, 7],
+    height: 9,
+    color: P.purple,
+    label: "CHURN.PKL",
+    short: "CHURN",
+    kick: "ML PROJECT",
+    title: "Telco Churn Predictor",
+    body: "Classic ML on tabular customer data. Tenure, charges and contract terms in, churn risk out.",
+    stack: "Python · scikit-learn · Pandas",
+  },
+  {
     id: "wip",
     kind: "construction",
-    at: [-13, -24],
-    size: [9, 8],
-    height: 16,
+    at: [-27, 8],
+    size: [7, 7],
+    height: 14,
     color: P.gold,
     label: "WIP",
     short: "WIP",
@@ -113,9 +127,9 @@ export const LANDMARKS = [
   {
     id: "lk",
     kind: "tower",
-    at: [11, -11],
-    size: [9, 9],
-    height: 34,
+    at: [11, -12.5],
+    size: [8, 8],
+    height: 30,
     color: P.gold,
     label: "LK / SCHNEIDER",
     short: "LK",
@@ -127,9 +141,9 @@ export const LANDMARKS = [
   {
     id: "neuro",
     kind: "tower",
-    at: [24, -14],
-    size: [8, 8],
-    height: 26,
+    at: [13, -22],
+    size: [7, 7],
+    height: 24,
     color: P.mag,
     label: "NEUROBINARIES",
     short: "NEURO",
@@ -157,7 +171,7 @@ export const LANDMARKS = [
   {
     id: "campus",
     kind: "campus",
-    at: [-17, 15],
+    at: [-19, -15],
     size: [22, 20],
     height: 15,
     color: P.gold,
@@ -170,24 +184,24 @@ export const LANDMARKS = [
   },
   {
     id: "anime",
-    kind: "billboard",
-    at: [9, 8],
+    kind: "shop",
+    at: [10, 8],
     size: [7, 5],
-    height: 24,
+    height: 18,
     color: P.mag,
     label: "ANIME DISTRICT",
     short: "ANIME",
     kick: "OFF THE CLOCK",
     title: "Anime District",
-    body: "The tallest screen in the city and it never turns off. Currently showing whatever I am three episodes behind on.",
+    body: "An open-front manga shop with the district screen bolted to its roof. The screen never turns off. Currently showing whatever I am three episodes behind on.",
     stack: "Anime · Manga · Too many tabs",
   },
   {
     id: "homelab",
     kind: "mast",
-    at: [13, -24],
+    at: [24, -24],
     size: [6, 6],
-    height: 36,
+    height: 32,
     color: P.cyan,
     label: "SIGNAL TOWER",
     short: "SIGNAL",
@@ -247,6 +261,16 @@ const claim = (cx, cz, w, d, pad) =>
   taken.push({ x0: cx - w / 2 - pad, z0: cz - d / 2 - pad, x1: cx + w / 2 + pad, z1: cz + d / 2 + pad });
 
 for (const L of LANDMARKS) claim(L.at[0], L.at[1], L.size[0], L.size[1], 0.9);
+// Breathing room around the priority lots so filler blocks and trees never
+// crowd the projects or the shop. Runs before the scatter, so the sampler
+// simply grows elsewhere.
+claim(-18, 8, 8, 7, 2.2);
+claim(-8, 8, 7, 7, 2.2);
+claim(-12, 20, 7, 7, 2.2);
+claim(10, 8, 7, 5, 3.5);
+// Same treatment for the campus: its own courtyard trees stay, everything
+// scattered keeps a few cells of distance.
+claim(-19, -15, 22, 20, 4.0);
 for (const r of ROADS) taken.push({ x0: r[0] - 0.5, z0: r[1] - 0.5, x1: r[2] + 0.5, z1: r[3] + 0.5 });
 // The bay, plus a metre of shoreline nothing should stand on.
 taken.push({ x0: WATER.x0 - 1.4, z0: WATER.z0 - 1.4, x1: EXTENT + 4, z1: EXTENT + 4 });
@@ -329,6 +353,14 @@ sow(
     FILLER.push([x, z, s, d, Math.round(4 + near * 16 + rnd() * 6)]);
   },
 );
+
+// The projects district stays clean: no filler blocks west and south of
+// the project houses. Trees and props stay, only the purple blocks go.
+// Runs after the sow so the rest of the city keeps its exact layout.
+for (let i = FILLER.length - 1; i >= 0; i--) {
+  const b = FILLER[i];
+  if (b[0] < -2 && b[1] > 12) FILLER.splice(i, 1);
+}
 
 // Then the planting. A tree's footprint here is deliberately smaller than its
 // canopy, so neighbouring crowns interlock the way they do in the reference art.

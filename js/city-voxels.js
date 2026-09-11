@@ -233,6 +233,68 @@ function buildTower(L, rnd) {
   return { ...v.merge(), beacons: [{ x: cx, y: 8.7 + H, z: cz, c: L.color }] };
 }
 
+// A cozy project house: one shared silhouette, roof and porch trim in the
+// project accent colour so they read as a family without looking cloned.
+// The lot keeps its size and the garden fills whatever the house does not,
+// which leaves room to grow a whole street of these later.
+function buildHouse(L, rnd) {
+  const v = new Vox();
+  const [cx, cz] = L.at;
+  const [w, d] = L.size;
+  const hw = 2.6;
+  const hd = 2.1;
+  const wallH = 3.4;
+  // garden: edging, lawn, fence with a gate gap on the street side
+  v.box(cx, 0, cz, w, 0.5, d, sh(P.kerb, 0.9));
+  v.box(cx, 0.5, cz, w - 1.2, 0.3, d - 1.2, sh(P.green, 0.5));
+  const fx = w / 2 - 0.7;
+  const fz = d / 2 - 0.7;
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      v.box(cx + sx * fx, 0.5, cz + sz * fz, 0.4, 1.3, 0.4, sh(P.bark, 0.8));
+  v.box(cx, 1.3, cz - fz, fx * 2, 0.22, 0.22, sh(P.bark, 0.6));
+  v.box(cx - (fx / 2 + 0.45), 1.3, cz + fz, fx - 0.9, 0.22, 0.22, sh(P.bark, 0.6));
+  v.box(cx + (fx / 2 + 0.45), 1.3, cz + fz, fx - 0.9, 0.22, 0.22, sh(P.bark, 0.6));
+  v.box(cx - fx, 1.3, cz, 0.22, 0.22, fz * 2, sh(P.bark, 0.6));
+  v.box(cx + fx, 1.3, cz, 0.22, 0.22, fz * 2, sh(P.bark, 0.6));
+  // plinth, plaster walls, timber corners
+  v.box(cx, 0.8, cz, hw * 2 + 0.6, 0.8, hd * 2 + 0.6, sh(P.stone, 0.5));
+  v.box(cx, 1.6, cz, hw * 2, wallH, hd * 2, sh(P.trim, 0.62));
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      v.box(cx + sx * (hw - 0.25), 1.6, cz + sz * (hd - 0.25), 0.5, wallH, 0.5, sh(P.bark, 0.7));
+  // stepped pitched roof in the project accent colour
+  const r0 = 1.6 + wallH;
+  v.box(cx, r0, cz, hw * 2 + 1.2, 1.0, hd * 2 + 1.2, sh(L.color, 0.62));
+  v.box(cx, r0 + 1.0, cz, hw * 2 - 0.6, 1.0, hd * 2 - 0.6, sh(L.color, 0.72));
+  v.box(cx, r0 + 2.0, cz, hw * 2 - 2.2, 0.9, hd * 2 - 2.0, sh(L.color, 0.82));
+  v.box(cx, r0 + 2.9, cz, 1.2, 0.5, hd * 2 - 2.6, sh(L.color, 0.9));
+  // chimney with a cap
+  v.box(cx + hw - 1.0, r0 + 0.4, cz - 1.0, 0.9, 3.0, 0.9, sh(P.stone, 0.55));
+  v.box(cx + hw - 1.0, r0 + 3.4, cz - 1.0, 1.2, 0.35, 1.2, sh(P.stone, 0.4));
+  // door, knob, porch with its own little roof
+  v.box(cx, 1.6, cz + hd + 0.02, 1.3, 2.3, 0.18, sh(P.bark, 0.55));
+  v.box(cx + 0.4, 2.5, cz + hd + 0.14, 0.18, 0.18, 0.1, P.gold, true);
+  v.box(cx, 0.8, cz + hd + 0.9, 2.6, 0.4, 1.6, sh(P.stone, 0.55));
+  for (const s of [-1, 1]) v.box(cx + s * 1.1, 1.2, cz + hd + 1.4, 0.3, 2.2, 0.3, sh(P.bark, 0.7));
+  v.box(cx, 3.4, cz + hd + 0.9, 2.8, 0.35, 1.8, sh(L.color, 0.7));
+  // warm windows: two on the street face, one per side
+  for (const s of [-1, 1]) {
+    v.box(cx + s * 1.7, 2.2, cz + hd + 0.03, 1.0, 1.2, 0.12, sh(P.gold, 1.05), true);
+    v.box(cx + s * 1.7, 2.2, cz + hd + 0.1, 1.1, 0.14, 0.1, sh(P.bark, 0.7));
+    v.box(cx + s * 1.7, 2.2, cz + hd + 0.1, 0.14, 1.3, 0.1, sh(P.bark, 0.7));
+  }
+  v.box(cx - hw - 0.03, 2.2, cz, 0.12, 1.2, 1.0, sh(P.gold, 1.05), true);
+  v.box(cx + hw + 0.03, 2.2, cz, 0.12, 1.2, 1.0, sh(P.gold, 1.05), true);
+  // garden dressing: lamp, bushes, stepping stones out the gate
+  lamp(v, cx - w / 2 + 1.2, 0.8, cz - d / 2 + 1.2, 0.8);
+  bush(v, cx + w / 2 - 1.4, 0.8, cz + d / 2 - 1.4, 1, rnd());
+  bush(v, cx - w / 2 + 1.4, 0.8, cz + d / 2 - 1.4, 0.85, rnd());
+  v.box(cx, 0.5, cz + hd + 2.1, 1.0, 0.12, 0.7, sh(P.trim, 0.7));
+  v.box(cx, 0.5, cz + hd + 2.9, 1.0, 0.12, 0.7, sh(P.trim, 0.7));
+  return { ...v.merge() };
+}
+
 function buildConstruction(L, rnd) {
   const v = new Vox();
   const [cx, cz] = L.at;
@@ -421,9 +483,7 @@ function buildCampus(L, rnd) {
   }
   v.cyl(lx, 16.7, cz, 5.9, 0.7, sh(P.roof, 0.7), 28);
   v.cyl(lx, 17.4, cz, 1.6, 1.2, sh(P.roof, 1.0), 16);
-  // an avenue of trees down the courtyard, benches and lamps around it
-  for (const dz of [-7.5, -2.5, 2.5, 7.5])
-    for (const dx of [-0.2, 10.2]) tree(v, cx + dx, 0.5, cz + dz, 0.86, (dz + dx) / 18 + 0.4);
+  // benches and lamps around the courtyard, no trees by request
   for (const dz of [-4, 4]) {
     v.box(cx + 4.5, 0.72, cz + dz, 0.35, 0.9, 2.6, sh(P.roof, 0.8));
     v.box(cx + 4.5, 1.6, cz + dz, 1.6, 0.35, 2.6, sh(P.roof, 1.1));
@@ -464,6 +524,124 @@ function buildBillboard(L, rnd) {
     ...v.merge(),
     screen: { ...screen.merge(), x: cx, y: sy, z: cz + 0.75 },
     beacons: [{ x: cx, y: sy + shh + 1, z: cz, c: P.mag }],
+  };
+}
+
+// An open-front manga shop facing south, with the district billboard kept
+// and bolted to its roof. Shelves, the figurine case and the counter are
+// real geometry so they read through the open front from the camera side.
+function buildShop(L, rnd) {
+  const v = new Vox();
+  const [cx, cz] = L.at;
+  const [w, d] = L.size;
+  const wallH = 5;
+  // floor slab, warm wooden floor, back and side walls, open south face
+  v.box(cx, 0, cz, w + 1, 0.6, d + 1, sh(P.kerb, 1.0));
+  v.box(cx, 0.6, cz, w - 0.4, 0.25, d - 0.4, sh(P.trim, 0.45));
+  const bz = cz - d / 2 + 0.25;
+  v.box(cx, 0.6, bz, w, wallH, 0.5, sh(P.purple, 0.5));
+  for (const s of [-1, 1]) {
+    v.box(cx + s * (w / 2 - 0.25), 0.6, cz, 0.5, wallH, d, sh(P.purple, 0.55));
+    v.box(cx + s * (w / 2 - 0.25), 0.6, cz + d / 2 - 0.25, 0.5, wallH, 0.5, sh(P.mag, 0.7));
+  }
+  // roof, parapets, and the glowing sign band across the front
+  const ry = 0.6 + wallH;
+  v.box(cx, ry, cz, w + 0.6, 0.6, d + 0.6, sh(P.kerb, 1.2));
+  v.box(cx, ry + 0.6, cz - d / 2 - 0.05, w + 0.6, 0.9, 0.3, sh(P.kerb, 1.2));
+  for (const s of [-1, 1])
+    v.box(cx + s * (w / 2 + 0.15), ry + 0.6, cz, 0.3, 0.9, d + 0.6, sh(P.kerb, 1.2));
+  // sign band: dark purple with white letter ticks and neon edges
+  v.box(cx, ry + 0.6, cz + d / 2 + 0.15, w + 0.6, 1.0, 0.3, sh(P.purple, 0.7));
+  v.box(cx, ry + 1.02, cz + d / 2 + 0.15, w + 0.6, 0.12, 0.32, P.mag, true);
+  v.box(cx, ry + 0.18, cz + d / 2 + 0.15, w + 0.6, 0.12, 0.32, P.mag, true);
+  for (let i = -2; i <= 2; i++)
+    v.box(cx + i * 1.1, ry + 0.6, cz + d / 2 + 0.32, 0.32, 0.5, 0.08, sh(P.trim, 1.2), true);
+  // stepped striped canopy draining toward the street, on thin poles
+  for (let i = 0; i < 7; i++)
+    for (let j = 0; j < 3; j++)
+      v.box(cx - 3 + i, 4.7 - j * 0.5, cz + d / 2 - 0.6 + j * 0.55, 0.92, 0.18, 0.7, i % 2 ? sh(P.trim, 0.75) : sh(P.mag, 0.8));
+  for (const s of [-1, 1]) v.box(cx + s * 3.1, 0, cz + d / 2 + 0.5, 0.22, 3.8, 0.22, sh(P.kerb, 1.4));
+  // manga shelves along the back wall, spines in loud colours
+  const shx = cx - 0.6;
+  const shz = bz + 0.55;
+  v.box(shx - 2.3, 0.85, shz, 0.25, 3.85, 0.7, sh(P.bark, 0.6));
+  v.box(shx + 2.3, 0.85, shz, 0.25, 3.85, 0.7, sh(P.bark, 0.6));
+  v.box(shx, 4.45, shz, 4.85, 0.25, 0.7, sh(P.bark, 0.6));
+  const bookCols = [P.pink, P.cyan, P.gold, P.mag, P.green, P.purple, P.trim];
+  for (let tier = 0; tier < 4; tier++) {
+    const sy = 0.85 + tier * 0.9;
+    v.box(shx, sy, shz, 4.6, 0.18, 0.65, sh(P.bark, 0.5));
+    let bx = shx - 2.1;
+    while (bx < shx + 1.9) {
+      const bw = 0.28 + rnd() * 0.22;
+      const bh = 0.42 + rnd() * 0.18;
+      const bc = bookCols[Math.floor(rnd() * bookCols.length)];
+      const glow = rnd() < 0.14;
+      v.box(bx + bw / 2, sy + 0.18, shz, bw, bh, 0.5, glow ? bc : sh(bc, 0.75), glow);
+      bx += bw + 0.06;
+    }
+  }
+  // figurine case on the east side: cabinet, glowing back, three figures
+  const fx = cx + w / 2 - 1.2;
+  v.box(fx, 0.85, cz + 0.3, 1.5, 0.9, 1.2, sh(P.bark, 0.55));
+  v.box(fx, 1.75, cz + 0.3, 1.5, 1.5, 0.18, sh(P.cyan, 0.9), true);
+  for (const [fc, off] of [[P.pink, -0.45], [P.gold, 0], [P.cyan, 0.45]]) {
+    v.box(fx + off, 1.75, cz + 0.62, 0.32, 0.5, 0.32, sh(fc, 0.8));
+    v.box(fx + off, 2.25, cz + 0.62, 0.26, 0.26, 0.26, sh(P.skin, 0.9));
+  }
+  v.box(fx, 3.2, cz + 0.4, 1.6, 0.15, 1.0, sh(P.trim, 0.6));
+  // wooden counter on the west side with a tiny glowing register
+  const qx = cx - w / 2 + 1.7;
+  v.box(qx, 0.85, cz + 0.6, 2.2, 1.05, 0.9, sh(P.roof, 0.75));
+  v.box(qx - 0.5, 1.9, cz + 0.6, 0.7, 0.5, 0.6, sh(P.dark, 1.2));
+  v.box(qx - 0.5, 2.1, cz + 0.93, 0.5, 0.35, 0.1, P.cyan, true);
+  // warm interior light, a rug, crates, sandwich board, lanterns and posters
+  v.box(cx, 5.45, cz, 4.5, 0.15, 3.0, sh(P.gold, 1.1), true);
+  v.box(cx, 0.87, cz + 0.5, 4.5, 0.03, 3.2, sh(P.gold, 0.1), true);
+  v.box(cx, 0.87, cz + 1.2, 2.2, 0.04, 1.4, sh(P.mag, 0.7));
+  v.box(cx - 2.4, 0.85, cz - 0.7, 1.1, 1.1, 1.1, sh(P.rust, 0.9));
+  v.box(cx - 2.3, 1.95, cz - 0.6, 0.9, 0.9, 0.9, sh(P.gold, 0.7));
+  v.box(cx - 2.5, 0, cz + d / 2 + 0.7, 1.2, 1.4, 0.15, sh(P.bark, 0.6));
+  v.box(cx - 2.5, 0.25, cz + d / 2 + 0.8, 0.9, 0.9, 0.08, P.mag, true);
+  // vertical side boards with glowing glyph ticks, like the reference front
+  for (const [bx, bc] of [[cx - w / 2 - 0.5, P.rust], [cx + w / 2 + 0.5, P.mag]]) {
+    v.box(bx, 0, cz + 0.5, 0.5, 4.2, 0.5, sh(P.kerb, 1.3));
+    v.box(bx, 0.6, cz + 0.5, 0.54, 3.0, 0.54, bc, true);
+    for (let g = 0; g < 3; g++)
+      v.box(bx, 1.2 + g * 0.8, cz + 0.79, 0.3, 0.4, 0.06, sh(P.trim, 1.2), true);
+  }
+  // paper lanterns flanking the entrance, hung off the canopy
+  for (const s of [-1, 1]) {
+    v.box(cx + s * 2.2, 3.0, cz + d / 2 + 0.2, 0.12, 1.6, 0.12, sh(P.bark, 0.7));
+    v.box(cx + s * 2.2, 1.9, cz + d / 2 + 0.2, 0.55, 0.85, 0.55, sh(P.gold, 1.15), true);
+    v.box(cx + s * 2.2, 2.75, cz + d / 2 + 0.2, 0.6, 0.18, 0.6, sh(P.dark, 1.4));
+    v.box(cx + s * 2.2, 1.82, cz + d / 2 + 0.2, 0.6, 0.18, 0.6, sh(P.dark, 1.4));
+  }
+  // red vending machine and a gashapon row by the entrance
+  v.box(cx - 2.2, 0.6, cz + d / 2 - 0.9, 1.0, 2.2, 0.9, sh(P.rust, 0.9));
+  v.box(cx - 2.2, 1.1, cz + d / 2 - 0.42, 0.7, 1.1, 0.1, P.pink, true);
+  v.box(cx + 1.2, 0.6, cz + d / 2 - 0.2, 1.6, 0.5, 0.6, sh(P.kerb, 1.2));
+  for (const [off, gc] of [[-0.5, P.pink], [0, P.cyan], [0.5, P.gold]])
+    v.box(cx + 1.2 + off, 1.1, cz + d / 2 - 0.2, 0.42, 0.55, 0.42, sh(gc, 0.85));
+  // poster boards on the front posts
+  for (const s of [-1, 1]) {
+    v.box(cx + s * (w / 2 - 0.25), 1.6, cz + d / 2 + 0.04, 0.9, 1.3, 0.08, sh(P.trim, 0.8));
+    v.box(cx + s * (w / 2 - 0.25), 1.7, cz + d / 2 + 0.09, 0.6, 0.7, 0.06, s < 0 ? P.cyan : P.gold, true);
+  }
+  // the old billboard screen, kept and bolted to the roof on a tall mast
+  // so it still clears the harbour behind it
+  for (const s of [-1, 1]) v.box(cx + s * 2.6, ry + 0.6, cz - 0.5, 0.6, 6.8, 0.6, sh(P.kerb, 1.5));
+  v.box(cx, ry + 3.6, cz - 0.5, 5.7, 0.4, 0.4, sh(P.kerb, 1.5));
+  v.box(cx, ry + 7.4, cz - 0.6, 8.2, 4.8, 0.5, sh(P.kerb, 1.5));
+  v.box(cx, ry + 12.2, cz - 0.6, 8.6, 0.5, 0.7, sh(P.kerb, 1.5));
+  for (const s of [-1, 1])
+    v.box(cx + s * 4.15, ry + 7.4, cz - 0.6, 0.2, 4.8, 0.55, P.mag, true);
+  const screen = new Vox();
+  screen.box(0, 0, 0, 7.4, 4.0, 0.3, P.mag, true);
+  return {
+    ...v.merge(),
+    screen: { ...screen.merge(), x: cx, y: ry + 7.4, z: cz + 0.15 },
+    beacons: [{ x: cx, y: ry + 12.6, z: cz - 0.5, c: P.mag }],
   };
 }
 
@@ -586,15 +764,21 @@ function buildPark(L, rnd) {
   v.box(dx + 0.86, G + 1.24, dz, 0.5, 0.22, 0.36, sh(P.roof, 0.9));
   v.box(dx - 0.88, G + 0.9, dz, 0.5, 0.24, 0.24, sh(P.trim, 0.6));
 
-  // planting round the edge, lamps, a picnic table and a low rail on the street
+  // planting round the edge, lamps, a picnic table and a low rail on the street.
+  // The north verge stays empty: it is the anime shop sightline.
+  const inSight = (x, z) => z < 15.5 && x > -4 && x < 16;
   const ring = [[-5.4, -4.6], [-5.6, 0.4], [-4.6, 5.2], [-1.6, 6.2], [6.4, 6.2], [6.2, -0.6], [4.8, -5], [-0.6, -5.4]];
   ring.forEach((p, i) => {
     const [ox, oz] = [cx + p[0] * R, cz + p[1] * R];
+    if (inSight(ox, oz)) return;
     if (i % 3 === 1) pine(v, ox, G, oz, 0.86 + (i % 2) * 0.12, rnd());
     else tree(v, ox, G, oz, 0.9 + (i % 3) * 0.1, rnd());
   });
-  for (const p of [[-2.4, -4.2], [2.6, 3.4], [-4.8, 2.6], [1.4, -4.6], [4.6, -2.2], [-5.4, -1.4]])
-    bush(v, cx + p[0] * R, G, cz + p[1] * R, 1, rnd());
+  for (const p of [[-2.4, -4.2], [2.6, 3.4], [-4.8, 2.6], [1.4, -4.6], [4.6, -2.2], [-5.4, -1.4]]) {
+    const [ox, oz] = [cx + p[0] * R, cz + p[1] * R];
+    if (inSight(ox, oz)) continue;
+    bush(v, ox, G, oz, 1, rnd());
+  }
   rock(v, cx - 1.2 * R, G, cz + 4.6 * R, 1.1, rnd());
   lamp(v, cx - 4.9 * R, G, cz - 4.9 * R, 1.05);
   lamp(v, cx + 5.1 * R, G, cz + 1.4 * R, 1.05);
@@ -666,10 +850,12 @@ function buildWheel(L) {
 
 export const BUILDERS = {
   tower: buildTower,
+  house: buildHouse,
   construction: buildConstruction,
   harbor: buildHarbor,
   campus: buildCampus,
   billboard: buildBillboard,
+  shop: buildShop,
   mast: buildMast,
   park: buildPark,
   wheel: buildWheel,

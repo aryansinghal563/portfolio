@@ -27,6 +27,7 @@ class AryanBoy3D extends HTMLElement {
     } catch (err) {
       console.warn("aryan-boy-3d: falling back to CSS console", err);
       this.style.display = "none";
+      try { document.documentElement.classList.remove("expect-3d"); } catch (_) {}
       return;
     }
     document.querySelector(".console")?.classList.add("has-3d");
@@ -104,6 +105,10 @@ class AryanBoy3D extends HTMLElement {
     this.tRX = -0.03;
     this.rY = 0;
     this.rX = -0.03;
+    // Entrance spin state. Progresses in _tick so the real model turns
+    // a full 360 with a scale pop instead of CSS flipping the canvas.
+    this._enter = 0;
+    this._enterDur = 0.9;
     this._bindTilt();
 
     this._resize();
@@ -620,6 +625,22 @@ class AryanBoy3D extends HTMLElement {
       this.screenTex.needsUpdate = true;
     }
 
+    // Entrance: one full turn plus a scale pop with overshoot.
+    // easeOutCubic drives the spin, easeOutBack drives the scale.
+    var spin = 0;
+    var scl = 1;
+    if (!still && this._enter < this._enterDur) {
+      this._enter = Math.min(this._enterDur, this._enter + dt);
+      var k = this._enter / this._enterDur;
+      var e = 1 - Math.pow(1 - k, 3);
+      spin = (1 - e) * -Math.PI * 2;
+      var c1 = 1.70158;
+      var c3 = c1 + 1;
+      var b = 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
+      scl = 0.55 + 0.45 * b;
+    }
+    this.boy.scale.setScalar(scl);
+
     if (!still) {
       const t = now / 1000;
       this.boy.position.y = Math.sin(t * 0.9) * 0.06;
@@ -630,10 +651,19 @@ class AryanBoy3D extends HTMLElement {
       this.rY = this.tRY;
       this.rX = this.tRX;
     }
-    this.rig.rotation.y = this.rY;
+    this.rig.rotation.y = this.rY + spin;
     this.rig.rotation.x = this.rX;
 
     this.renderer.render(this.scene, this.camera);
+    if (!this._ready) {
+      this._ready = true;
+      document.querySelector(".console")?.classList.add("is-3d-ready");
+      try {
+        var de = document.documentElement;
+        de.classList.add("is-3d-ready");
+        de.classList.remove("expect-3d");
+      } catch (_) {}
+    }
   };
 }
 

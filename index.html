@@ -10,10 +10,36 @@
     content="Aryan Singhal — backend builder training the machine-learning arc. CSE '28, New Delhi.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/pressstart2p/v16/e3t4euO8T-267oIAQAu6jDQyK3nVivM.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/pixelifysans/v3/CHylV-3HFUT7aC4iv1TxGDR9Jn0Eiw.woff2">
+  <link rel="preload" as="fetch" crossorigin href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js">
   <link
     href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400..700&family=Anton&family=Newsreader:ital,wght@0,400;0,600;1,400&family=Monoton&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    (function () {
+      var el = document.documentElement;
+      el.classList.add("fonts-loading");
+      // Assume the 3D handheld will boot. main.js and boy3d.js remove
+      // this if 3D fails, revealing the 2D console as fallback only.
+      // Skip the wait entirely when WebGL is clearly unavailable.
+      try {
+        var c = document.createElement("canvas");
+        var gl = c.getContext("webgl2") || c.getContext("webgl");
+        if (gl) el.classList.add("expect-3d");
+      } catch (e) { el.classList.add("expect-3d"); }
+      function ready() { el.classList.add("fonts-ready"); el.classList.remove("fonts-loading"); }
+      try {
+        var loads = [
+          document.fonts.load('400 20px "Press Start 2P"'),
+          document.fonts.load('400 20px "Pixelify Sans"')
+        ];
+        Promise.all(loads).then(ready, ready);
+        setTimeout(ready, 3000);
+      } catch (e) { ready(); }
+    })();
+  </script>
 </head>
 
 <body>
@@ -23,8 +49,8 @@
       <header class="nav">
         <span class="brand"><span class="brand-chip"></span>ARYANSINGHAL.DEV</span>
         <nav class="nav-links">
-          <a href="mailto:aryansinghal563@gmail.com">work</a>
           <a href="https://github.com/aryansinghal563" target="_blank" rel="noopener">github</a>
+          <a href="https://www.linkedin.com/in/aryansinghal563/" target="_blank" rel="noopener">linkedin</a>
           <a href="mailto:aryansinghal563@gmail.com">contact</a>
         </nav>
       </header>
@@ -43,8 +69,7 @@
             tooling by day. CSE '28 · New Delhi.</p>
           <div class="cta-row">
             <a class="btn-start" href="mailto:aryansinghal563@gmail.com">PRESS START</a>
-            <a class="btn-gh ghbtn" href="https://github.com/aryansinghal563" target="_blank" rel="noopener">GITHUB
-              ▸</a>
+            <a class="btn-gh ghbtn" href="https://github.com/aryansinghal563" target="_blank" rel="noopener">GITHUB</a>
           </div>
         </div>
 
@@ -122,9 +147,22 @@
       <footer class="foot">
         <span class="foot-brand">ARYANSINGHAL.DEV</span>
         <div class="foot-links">
-          <a href="mailto:aryansinghal563@gmail.com">Email</a>
-          <a href="https://github.com/aryansinghal563" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://x.com/aryansinghal563" target="_blank" rel="noopener">X / @aryansinghal563</a>
+          <a href="mailto:aryansinghal563@gmail.com" aria-label="Email">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="1"/><path d="M2 7l10 6L22 7"/></svg>
+            <span>Email</span>
+          </a>
+          <a href="https://github.com/aryansinghal563" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+            <span>GitHub</span>
+          </a>
+          <a href="https://www.linkedin.com/in/aryansinghal563/" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+            <span>LinkedIn</span>
+          </a>
+          <a href="https://x.com/aryansinghal563" target="_blank" rel="noopener" aria-label="X profile">
+            <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93 6.07-6.93zm-1.29 19.5h2.04L6.49 3.24H4.3l13.31 17.41z"/></svg>
+            <span>@aryansinghal563</span>
+          </a>
         </div>
         <span class="foot-copy">© 2026 Aryan Singhal</span>
       </footer>

@@ -116,32 +116,10 @@
         })
         .catch(function () {});
 
-      fetch("https://api.github.com/users/" + user + "/repos?per_page=100")
-        .then(function (r) {
-          if (!r.ok) throw 0;
-          return r.json();
-        })
-        .then(function (repos) {
-          if (!Array.isArray(repos)) throw 0;
-          self.repoCount = repos.length;
-          self.stars = repos.reduce(function (s, x) {
-            return s + (x.stargazers_count || 0);
-          }, 0);
-          self.updateCaption();
-        })
-        .catch(function () {
-          self.updateCaption(true);
-        });
     }
 
-    updateCaption(failed) {
+    updateCaption() {
       var parts = [];
-      if (this.repoCount != null)
-        parts.push(
-          this.repoCount + (this.repoCount === 1 ? " repo" : " repos"),
-        );
-      if (this.stars != null)
-        parts.push(this.stars + (this.stars === 1 ? " star" : " stars"));
       if (this.total != null) parts.push(this.total + " contributions");
       parts.push("github.com/" + this.user);
       if (!parts.length) parts = ["github.com/" + this.user];

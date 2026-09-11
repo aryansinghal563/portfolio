@@ -336,4 +336,14 @@
   showOffHint();
   setLightAttr();
   setTimeout(boot, 800);
+
+  // 3D fallback watchdog: the 2D console stays hidden while 3D is
+  // expected. If the 3D module never reports ready (CDN blocked,
+  // no WebGL), reveal the 2D console instead of a stuck loader.
+  setTimeout(function () {
+    try {
+      var de = document.documentElement;
+      if (!de.classList.contains("is-3d-ready")) de.classList.remove("expect-3d");
+    } catch (e) {}
+  }, 6000);
 })();

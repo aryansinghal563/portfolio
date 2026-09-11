@@ -411,7 +411,7 @@ class VoxelCity extends HTMLElement {
   }
 
   // Tag text and box size only change when the stage does, so measure here
-  // rather than eleven times a frame.
+  // rather than twelve times a frame.
   _measureLabels() {
     if (!this.labels) return;
     const short = this._w < 620;
@@ -795,7 +795,7 @@ class VoxelCity extends HTMLElement {
       }
       const pulse = 0.6 + Math.abs(Math.sin(now / 620)) * 0.4;
       for (const b of this.beacons) b.material.opacity = pulse;
-      if (this.screen) this.screen.material.color.setScalar(0.82 + Math.sin(now / 90) * 0.18);
+      if (this.screen) this.screen.material.color.setScalar(0.9 + Math.sin(now / 90) * 0.1);
     }
 
     // Ease the hover lift rather than snapping it.
