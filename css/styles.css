@@ -526,6 +526,77 @@ button.ss-item:active .ss-pill {
   border: 1px dashed #f8b800;
   color: #f8b800;
 }
+.work {
+  padding: 40px 0 52px;
+  border-top: 2px solid #ff2a6d;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #12063a;
+  border: 1px solid #3a1f6e;
+  padding: 22px 20px 18px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.work-card:hover {
+  border-color: #05d9e8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(5, 217, 232, 0.12);
+}
+.work-kick {
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  color: #8b7fca;
+}
+.work-title {
+  margin: 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d1f7ff;
+}
+.work-body {
+  margin: 0;
+  font-family: "Pixelify Sans", monospace;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #9d8fd8;
+}
+.work-stack {
+  margin-top: auto;
+  padding-top: 6px;
+  font-family: "VT323", monospace;
+  font-size: 16px;
+  color: #05d9e8;
+  letter-spacing: 0.5px;
+}
+@media (max-width: 900px) {
+  .work-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .work-grid {
+    grid-template-columns: 1fr;
+  }
+  .work-card {
+    padding: 16px 16px 14px;
+  }
+}
 
 .city {
   width: calc(100vw - var(--sbw, 0px));
