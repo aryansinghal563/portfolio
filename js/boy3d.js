@@ -675,6 +675,17 @@ class AryanBoy3D extends HTMLElement {
       var c3 = c1 + 1;
       var b = 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
       scl = 0.55 + 0.45 * b;
+      if (this._enter >= this._enterDur && !this._enterDone) {
+        this._enterDone = true;
+        try {
+          window.dispatchEvent(new CustomEvent("boy-enter-done"));
+        } catch (_) {}
+      }
+    } else if (still && !this._enterDone) {
+      this._enterDone = true;
+      try {
+        window.dispatchEvent(new CustomEvent("boy-enter-done"));
+      } catch (_) {}
     }
     this.boy.scale.setScalar(scl);
 

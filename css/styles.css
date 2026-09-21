@@ -509,6 +509,30 @@ button.ss-item:active .ss-pill {
   gap: 10px;
   font-size: 16px;
 }
+.tags.lanes {
+  flex-direction: column;
+  gap: 12px;
+}
+.lane {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.lane-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+.lane-label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  color: #8b7fca;
+  margin-right: 4px;
+  min-width: 56px;
+  padding-top: 10px;
+}
 .tag {
   padding: 8px 14px;
 }
@@ -524,6 +548,14 @@ button.ss-item:active .ss-pill {
 }
 .tag-load {
   border: 1px dashed #f8b800;
+  color: #f8b800;
+}
+.tag-load-cyan {
+  border: 1px dashed #05d9e8;
+  color: #05d9e8;
+}
+.tag-yellow {
+  border: 1px solid #f8b800;
   color: #f8b800;
 }
 .work {
@@ -603,17 +635,32 @@ button.ss-item:active .ss-pill {
   max-width: calc(100vw - var(--sbw, 0px));
   margin-left: calc(50% - 50vw + var(--sbw, 0px) / 2);
   padding: 0 0 40px;
-  border-top: 2px solid #ff2a6d;
   background: linear-gradient(180deg, #0d0221 0%, #150634 42%, #0d0221 100%);
 }
 .city-head {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 34px 34px 6px;
+  padding: 34px 34px 18px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 18px;
+  position: relative;
+}
+.city-head::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 34px;
+  right: 34px;
+  height: 2px;
+  background: #ff2a6d;
+}
+@media (max-width: 480px) {
+  .city-head::before {
+    left: 18px;
+    right: 18px;
+  }
 }
 .city-hint {
   font-family: "VT323", monospace;

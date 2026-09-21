@@ -341,7 +341,29 @@
 
   showOffHint();
   setLightAttr();
-  setTimeout(boot, 800);
+  (function scheduleBoot() {
+    var de = document.documentElement;
+    if (!de.classList.contains("expect-3d")) {
+      setTimeout(boot, 800);
+      return;
+    }
+    var booted = false;
+    function doBoot() {
+      if (booted) return;
+      booted = true;
+      setTimeout(boot, 100);
+    }
+    window.addEventListener("boy-enter-done", doBoot, { once: true });
+    // Fallback if 3D never comes (CDN blocked) the watchdog removes expect-3d
+    var fallback = setInterval(function () {
+      if (!document.documentElement.classList.contains("expect-3d") && !booted) {
+        clearInterval(fallback);
+        doBoot();
+      }
+    }, 200);
+    // Hard fallback so boot is never stuck
+    setTimeout(doBoot, 3200);
+  })();
 
   // 3D fallback watchdog: the 2D console stays hidden while 3D is
   // expected. If the 3D module never reports ready (CDN blocked,
